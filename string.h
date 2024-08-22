@@ -8,6 +8,14 @@
 #include <string.h>
 #include <ctype.h>
 
+#ifndef lambda
+	#define lambda(return_type, function_body) \
+	({ \
+		  return_type __fn__ function_body \
+			  __fn__; \
+	})
+#endif
+
 typedef struct {
 	char *data;
 	int len;
@@ -63,6 +71,8 @@ bool strIsEqual(string s1, string s2);
 
 bool strnIsEqual(string s1, string s2, int n);
 
+bool strIsEqualC(string s1, const char *s2);
+
 strView strTokStart(string s, const char *delim);
 
 strView strTok(string s, strView previuosView, const char *delim);
@@ -94,8 +104,6 @@ void strTrim(string *s);
 void strFree(string s);
 
 void strPrint(string s);
-
-string readWholeFile(const char *fileName);
 
 int getFileSize(FILE *fp);
 
@@ -264,6 +272,11 @@ bool strIsEqual(string s1, string s2)
 	return strCmp(s1, s2) == 0;
 }
 
+bool strIsEqualC(string s1, const char *s2)
+{
+	return strCmp(s1, newStrView(s2)) == 0;
+}
+
 bool strnIsEqual(string s1, string s2, int n)
 {
 	return strnCmp(s1, s2, n) == 0;
@@ -301,6 +314,15 @@ strView strTok(string s, strView previuosView, const char *delim)
 	}
 
 	return view;
+}
+
+void strForEachTok(string s, const char *delim, void (*action)(strView))
+{
+	strView view = strTokStart(s, delim);
+	while (!strIsEmpty(view)) {
+		action(view);
+		view = strTok(s, view, delim);
+	}
 }
 
 int strCountc(string haystack, char needle)
