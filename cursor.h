@@ -5,7 +5,29 @@
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
+#define C0  "\e[0m"     /*  RESET        */
+
+#define C1  "\e[0;31m"  /*  RED          */
+#define C2  "\e[0;32m"  /*  GREEN        */
+#define C3  "\e[0;33m"  /*  YELLOW       */
+#define C4  "\e[0;34m"  /*  BLUE         */
+#define C5  "\e[0;035m" /*  MAGENTA      */
+#define C6  "\e[0;36m"  /*  CYAN         */
+#define C7  "\e[0;37m"  /*  WHITE        */
+#define C8  "\e[0;90m"  /*  GRAY         */
+
+#define B1  "\e[1;91m"  /*  BOLD RED     */
+#define B2  "\e[1;92m"  /*  BOLD GREEN   */
+#define B3  "\e[1;93m"  /*  BOLD YELLOW  */
+#define B4  "\e[1;94m"  /*  BOLD BLUE    */
+#define B5  "\e[1;95m"  /*  BOLD MAGENTA */
+#define B6  "\e[1;96m"  /*  BOLD CYAN    */
+#define B7  "\e[1;97m"  /*  BOLD WHITE   */
+#define B8  "\e[1;90m"  /*  BOLD GRAY    */
+
 enum KEY {
+    EMPTY_KEY = 999,
+
 	ARROW_LEFT = 1000,
 	ARROW_RIGHT = 1001,
 	ARROW_UP = 1002,
@@ -30,36 +52,41 @@ enum CURSOR_STYLE {
 	BEAM_BLINKING = 5,
 };
 
-ERROR enableRawMode();
-
+ERROR enableRawMode(int vminKeys, int vtime);
 ERROR disableRawMode();
 
-void hideCursor();
+void disableLineWrap();
+void enableLineWrap();
 
+void hideCursor();
 void showCursor();
 
 void setCursorStyle(enum CURSOR_STYLE style);
 
 ERROR getCursorPos(int *x, int *y);
-
 void setCursorPos(int x, int y);
 
-void saveCursorPos();
+void setCursorX(int x);
 
+void cursorUp(int n);
+void cursorDown(int n);
+void cursorRight(int n);
+void cursorLeft(int n);
+
+// unsupoerted on some terminals
+void saveCursorPos();
 void restoreCursorPos();
 
 void enterAlternativeScreen();
-
 void exitAlternativeScreen();
 
 void clearLine();
-
 void clearScreen();
 
+void updateScreen();
+
 ERROR getScreenSizeByCursor(int *width, int *height);
-
 ERROR getScreenSizeByIoctl(int *width, int *height);
-
 ERROR getScreenSize(int *width, int *height);
 
 ERROR registerChangeInWindowSize(void (*funciton)(int));
@@ -67,9 +94,7 @@ ERROR registerChangeInWindowSize(void (*funciton)(int));
 ERROR enableFullBuffering(FILE *fp);
 
 int waitForByte();
-
 int readEscapeKey();
-
 int readKey();
 
 #ifdef CURSOR_IMPL
@@ -85,14 +110,14 @@ int readKey();
 
     static struct termios originalTermios;
 
-    ERROR enableRawMode()
+    ERROR enableRawMode(int vminKeys, int vtime)
     {
         if (tcgetattr(STDIN_FILENO, &originalTermios) == -1)
             return "tcgetattr error";
 
         struct termios raw = originalTermios;
-        raw.c_cc[VMIN] = 0;
-        raw.c_cc[VTIME] = 1;
+        raw.c_cc[VMIN] = vminKeys;
+        raw.c_cc[VTIME] = vtime;
         raw.c_cflag |= (CS8);
         raw.c_oflag &= ~(OPOST);
         raw.c_iflag &= ~(IXON | ICRNL | ISTRIP | INPCK | BRKINT);
@@ -111,62 +136,102 @@ int readKey();
         return OK;
     }
 
+    void disableLineWrap()
+    {
+        printf("\e[?7l");
+    }
+
+    void enableLineWrap()
+    {
+        printf("\e[?7h");
+    }
+
     void hideCursor()
     {
-        printf("\x1b[?25l");
+        printf("\e[?25l");
     }
 
     void showCursor()
     {
-        printf("\x1b[?25h");
+        printf("\e[?25h");
     }
 
     void setCursorStyle(enum CURSOR_STYLE style)
     {
-        printf("\x1b[%d q", (int)style);
+        printf("\e[%d q", (int)style);
     }
 
     ERROR getCursorPos(int *x, int *y)
     {
         printf("\033[6n");
-        if (scanf("\x1b[%d;%dR", y, x) == 2)
+        if (scanf("\e[%d;%dR", y, x) == 2)
             return OK;
         return SCANF_ERROR;
     }
 
     void setCursorPos(int x, int y)
     {
-        printf("\x1b[%d;%dH", y ,x);
+        printf("\e[%d;%dH", y ,x);
+    }
+
+    void setCursorX(int x)
+    {
+        printf("\e[%dG", x);
+    }
+
+    void cursorUp(int n)
+    {
+        printf("\e[%dA", n);
+    }
+
+    void cursorDown(int n)
+    {
+        printf("\e[%dB", n);
+    }
+
+    void cursorRight(int n)
+    {
+        printf("\e[%dC", n);
+    }
+
+    void cursorLeft(int n)
+    {
+        printf("\e[%dD", n);
     }
 
     void saveCursorPos()
     {
-        printf("\x1b[s");
+        printf("\e[s");
     }
 
     void restoreCursorPos()
     {
-        printf("\x1b[u");
+        printf("\e[u");
     }
 
     void enterAlternativeScreen()
     {
-        printf("\x1b[?1049h");
+        printf("\e[?1049h");
     }
 
     void exitAlternativeScreen()
     {
-        printf("\x1b[?1049l");
+        printf("\e[?1049l");
     }
 
     void clearLine()
     {
-        printf("\x1b[K");
+        printf("\e[K");
     }
 
     void clearScreen()
     {
-        printf("\x1b[2J");
+        printf("\e[2J");
+    }
+
+    void updateScreen()
+    {
+        fflush(stdout);
     }
 
     ERROR getScreenSizeByCursor(int *width, int *height)
@@ -219,7 +284,9 @@ int readKey();
     int waitForByte()
     {
         char c;
-        while (read(STDIN_FILENO, &c, 1) != 1);
+        // while (read(STDIN_FILENO, &c, 1) != 1);
+        if (read(STDIN_FILENO, &c, 1) != 1)
+            return EMPTY_KEY;
         return c;
     }
 
@@ -230,7 +297,7 @@ int readKey();
         unsigned short key;
 
         if (read(STDIN_FILENO, &key, 2) != 2)
-            return '\x1b';
+            return '\e';
 
         switch (key) {
             case SEQUENCE('[', 'A'): return ARROW_UP;
@@ -242,13 +309,13 @@ int readKey();
             case SEQUENCE('[', '6'): return PAGE_DOWN; // might be with a ~
         }
 
-        return '\x1b';
+        return '\e';
     }
 
     int readKey()
     {
         char c = waitForByte();
-        if (c == '\x1b')
+        if (c == '\e')
             return readEscapeKey();
         return c;
     }
