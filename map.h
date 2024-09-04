@@ -1,8 +1,11 @@
 #ifndef MAP_H
 #define MAP_H
 
-#define $(element) (&((typeof(element)){element}))
-#define DUP_VAL(value) memdup($(value), sizeof(value))
+#define ADDR(element) (&((typeof(element)){element}))
+#define DUP_VAL(value) memdup(ADDR(value), sizeof(value))
+
+
+typedef int (*cmpKeysType)(const void *, const void *);
 
 typedef struct avlNode {
 	struct avlNode *left;
@@ -17,7 +20,7 @@ typedef struct {
 	int (*cmpKeys)(const void *, const void *);
 } map;
 
-// typedef avlNode *map;
+const map EMPTY_MAP = {0};
 
 map newMap(int (*cmpKeys)(const void *, const void *));
 
@@ -45,9 +48,14 @@ void mapUpdate(map m,
 		       void (*freeData)(void *),
 			   void *newData);
 
+void mapOrderTraverse(map m, 
+                      void (*action)(const void *key, const void *data));
+
 void mapFree(map m, 
 		     void (*freeKey)(void *),
 		     void (*freeData)(void *));
+
+bool mapIsEmpty(map m);
 
 // util
 void *memdup(const void *mem, int size);
@@ -288,6 +296,17 @@ void avlUpdate(avlNode *root,
 	node->data = newData;
 }
 
+void avlOrderTraverse(avlNode *root, 
+                      void (*action)(const void *key, const void *data))
+{
+    if (root == NULL)
+        return;
+
+    avlOrderTraverse(root->left, action);
+    action(root->key, root->data);
+    avlOrderTraverse(root->right, action);
+}
+
 void avlFree(avlNode *root, 
 		     void (*freeKey)(void *),
 		     void (*freeData)(void *))
@@ -377,6 +396,17 @@ void mapUpdate(map m,
 			   void *newData)
 {
 	avlUpdate(m.root, key, m.cmpKeys, freeData, newData);
+}
+
+void mapOrderTraverse(map m, 
+                      void (*action)(const void *key, const void *data))
+{
+    avlOrderTraverse(m.root, action);
+}
+
+bool mapIsEmpty(map m)
+{
+    return m.root == NULL;
 }
 
 void mapFree(map m, 
