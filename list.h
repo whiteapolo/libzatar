@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <string.h>
 
 #define ADDR(element) (&((typeof(element)){element}))
 #define DUP(value) memdup(ADDR(value), sizeof(value))
@@ -26,9 +27,9 @@ void listFree(list **m, void (*freeData)(void *));
 
 void listInsertEnd(list *l, void *data);
 
-void listPrint(list *l, void (*printData)(void*));
+void listPrint(const list *l, void (*printData)(void*));
 
-list *listGetLast(list *l);
+const list *listGetLast(const list *l);
 
 void listReverse(list **lst);
 
@@ -86,10 +87,10 @@ void *memdup(const void *mem, int size);
 
     void listInsertEnd(list *l, void *data)
     {
-        listInsertAfter(listGetLast(l), data);
+        listInsertAfter((list *)listGetLast(l), data);
     }
 
-    void listPrint(list *l, void (*printData)(void*))
+    void listPrint(const list *l, void (*printData)(void*))
     {
         while (l) {
             printData(l->data);
@@ -97,19 +98,22 @@ void *memdup(const void *mem, int size);
         }
     }
 
-    list *listGetLast(list *l)
+    const list *listGetLast(const list *l)
     {
         while (l->next)
             l =  l->next;
         return l;
     }
 
-    void *memdup(const void *mem, int size)
+#ifndef MEMDUP
+#define MEMDUP
+    void *memdup(const void *mem, const int size)
     {
         void *newMem = malloc(size);
         memcpy(newMem, mem, size);
         return newMem;
     }
+#endif
 
     void listReverse(list **lst)
     {

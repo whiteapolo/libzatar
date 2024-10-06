@@ -17,11 +17,11 @@ void enqueue(queue *q, void *data);
 
 void *dequeue(queue *q);
 
-bool queueIsEmpty(const queue *q);
+bool queueIsEmpty(const queue q);
 
 void queueFree(queue *q, void (*freeData)(void *));
 
-void queuePrint(const queue *q, void (*printData)(void *));
+void queuePrint(const queue q, void (*printData)(void *));
 
 #ifdef QUEUE_IMPL
 
@@ -49,20 +49,20 @@ void queuePrint(const queue *q, void (*printData)(void *));
         return data;
     }
 
-    bool queueIsEmpty(const queue *q)
+    bool queueIsEmpty(const queue q)
     {
-        return q->start == NULL;
+        return q.start == NULL;
     }
 
-    void queuePrint(const queue *q, void (*printData)(void *))
+    void queuePrint(const queue q, void (*printData)(void *))
     {
-        listPrint(q->start, printData);
+        listPrint(q.start, printData);
     }
 
     void queueFree(queue *q, void (*freeData)(void *))
     {
         if (freeData)
-            while (!queueIsEmpty(q))
+            while (!queueIsEmpty(*q))
                 freeData(dequeue(q));
     }
 

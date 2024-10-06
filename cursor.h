@@ -1,7 +1,10 @@
 #ifndef CURSOR_H
 #define CURSOR_H
 
-#include "error.h"
+#ifndef RESULT
+#define RESULT
+typedef enum { Ok = 0, Err = -1, } Result;
+#endif //RESULT
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
@@ -52,8 +55,8 @@ enum CURSOR_STYLE {
 	BEAM_BLINKING = 5,
 };
 
-ERROR enableRawMode(int vminKeys, int vtime);
-ERROR disableRawMode();
+Result enableRawMode(int vminKeys, int vtime);
+Result disableRawMode();
 
 void disableLineWrap();
 void enableLineWrap();
@@ -63,7 +66,7 @@ void showCursor();
 
 void setCursorStyle(enum CURSOR_STYLE style);
 
-ERROR getCursorPos(int *x, int *y);
+Result getCursorPos(int *x, int *y);
 void setCursorPos(int x, int y);
 
 void setCursorX(int x);
@@ -73,7 +76,7 @@ void cursorDown(int n);
 void cursorRight(int n);
 void cursorLeft(int n);
 
-// unsupoerted on some terminals
+// unsupported on some terminals
 void saveCursorPos();
 void restoreCursorPos();
 
@@ -85,13 +88,13 @@ void clearScreen();
 
 void updateScreen();
 
-ERROR getScreenSizeByCursor(int *width, int *height);
-ERROR getScreenSizeByIoctl(int *width, int *height);
-ERROR getScreenSize(int *width, int *height);
+Result getScreenSizeByCursor(int *width, int *height);
+Result getScreenSizeByIoctl(int *width, int *height);
+Result getScreenSize(int *width, int *height);
 
-ERROR registerChangeInWindowSize(void (*funciton)(int));
+Result registerChangeInWindowSize(void (*funciton)(int));
 
-ERROR enableFullBuffering(FILE *fp);
+Result enableFullBuffering(FILE *fp);
 
 int waitForByte();
 int readEscapeKey();
@@ -110,10 +113,10 @@ int readKey();
 
     static struct termios originalTermios;
 
-    ERROR enableRawMode(int vminKeys, int vtime)
+    Result enableRawMode(int vminKeys, int vtime)
     {
         if (tcgetattr(STDIN_FILENO, &originalTermios) == -1)
-            return "tcgetattr error";
+            return Err;
 
         struct termios raw = originalTermios;
         raw.c_cc[VMIN] = vminKeys;
@@ -124,16 +127,16 @@ int readKey();
         raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
 
         if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
-            return "tcsetattr error";
+            return Err;
 
-        return OK;
+        return Ok;
     }
 
-    ERROR disableRawMode()
+    Result disableRawMode()
     {
         if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &originalTermios) == -1)
-            return "tcsetattr error";
-        return OK;
+            return Err;
+        return Ok;
     }
 
     void disableLineWrap()
@@ -161,12 +164,12 @@ int readKey();
         printf("\e[%d q", (int)style);
     }
 
-    ERROR getCursorPos(int *x, int *y)
+    Result getCursorPos(int *x, int *y)
     {
         printf("\033[6n");
         if (scanf("\e[%d;%dR", y, x) == 2)
-            return OK;
-        return SCANF_ERROR;
+            return Ok;
+        return Err;
     }
 
     void setCursorPos(int x, int y)
@@ -234,33 +237,33 @@ int readKey();
         fflush(stdout);
     }
 
-    ERROR getScreenSizeByCursor(int *width, int *height)
+    Result getScreenSizeByCursor(int *width, int *height)
     {
         setCursorPos(999, 999);
         return getCursorPos(width, height);
     }
 
-    ERROR getScreenSizeByIoctl(int *width, int *height)
+    Result getScreenSizeByIoctl(int *width, int *height)
     {
         struct winsize ws;
 
         if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != 0)
-            return "ioctl error";
+            return Err;
 
         *width = ws.ws_col;
         *height = ws.ws_row;
-        return OK;
+        return Ok;
     }
 
-    ERROR getScreenSize(int *width, int *height)
+    Result getScreenSize(int *width, int *height)
     {
-        if (getScreenSizeByIoctl(width, height) == OK)
-            return OK;
+        if (getScreenSizeByIoctl(width, height) == Ok)
+            return Ok;
 
         return getScreenSizeByCursor(width, height);
     }
 
-    ERROR registerChangeInWindowSize(void (*funciton)(int))
+    Result registerChangeInWindowSize(void (*funciton)(int))
     {
         struct sigaction sa;
         sa.sa_handler = funciton;
@@ -268,23 +271,22 @@ int readKey();
         sigemptyset(&sa.sa_mask);
 
         if (sigaction(SIGWINCH, &sa, NULL) == -1)
-            return "sigaction error";
+            return Err;
 
-        return OK;
+        return Ok;
     }
 
-    ERROR enableFullBuffering(FILE *fp)
+    Result enableFullBuffering(FILE *fp)
     {
         // do not flush on '\n'
         if (setvbuf(fp, NULL, _IOFBF, BUFSIZ) != 0)
-            return "setvbuf error";
-        return OK;
+            return Err;
+        return Ok;
     }
 
     int waitForByte()
     {
         char c;
-        // while (read(STDIN_FILENO, &c, 1) != 1);
         if (read(STDIN_FILENO, &c, 1) != 1)
             return EMPTY_KEY;
         return c;
