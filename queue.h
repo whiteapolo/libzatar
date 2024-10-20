@@ -1,6 +1,5 @@
 #ifndef QUEUE_H
 #define QUEUE_H
-
 #include "list.h"
 
 #define ADDR(element) (&((typeof(element)){element}))
@@ -12,22 +11,20 @@ typedef struct {
 } queue;
 
 queue newQueue();
-
 void enqueue(queue *q, void *data);
-
 void *dequeue(queue *q);
-
 bool queueIsEmpty(const queue *q);
-
 void queueFree(queue *q, void (*freeData)(void *));
-
 void queuePrint(const queue *q, void (*printData)(void *));
 
 #ifdef QUEUE_IMPL
 
 queue newQueue()
 {
-	return (queue){0};
+	queue q;
+	q.start = NULL;
+	q.end = NULL;
+	return q;
 }
 
 void enqueue(queue *q, void *data)
@@ -67,5 +64,4 @@ void queueFree(queue *q, void (*freeData)(void *))
 }
 
 #endif
-
 #endif

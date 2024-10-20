@@ -1,9 +1,11 @@
 #ifndef GRAPH_H
 #define GRAPH_H
-
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+
+#define ADDR(element) (&((typeof(element)){element}))
+#define DUP_VAL(value) memdup(ADDR(value), sizeof(value))
 
 typedef struct {
 	char data;
@@ -40,7 +42,11 @@ char graphGetData(const graph *g, int id);
 
 void graphPrint(const graph *g);
 
+void *memdup(const void *mem, const int size);
+
 #ifdef GRAPH_IMPL
+#include <stdlib.h>
+#include <string.h>
 
 static int idCounter = 0;
 
@@ -135,6 +141,16 @@ void graphPrint(const graph *g)
 		printf("\n");
 	}
 }
+
+#ifndef MEMDUP
+#define MEMDUP
+void *memdup(const void *mem, const int size)
+{
+	void *newMem = malloc(size);
+	memcpy(newMem, mem, size);
+	return newMem;
+}
+#endif
 
 #endif
 

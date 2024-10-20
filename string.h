@@ -1,6 +1,5 @@
 #ifndef STRING_H
 #define STRING_H
-
 #include <stdbool.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -69,7 +68,6 @@ const string *scannerNextLine(Scanner *scanner);
 void scannerFree(Scanner *scanner);
 
 #ifdef STRING_IMPL
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -417,5 +415,4 @@ void scannerFree(Scanner *scanner)
 }
 
 #endif
-
 #endif

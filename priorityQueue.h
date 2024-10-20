@@ -1,5 +1,6 @@
 #ifndef PRIORITYQUEUE_H
 #define PRIORITYQUEUE_H
+#include <stdbool.h>
 
 typedef struct {
 	void **vec;
@@ -18,7 +19,6 @@ bool priorityQueueIsEmpty(const priorityQueue *q);
 void priorityQueueFree(priorityQueue *q, void (*freeData)(void *));
 
 #ifdef PRIORITYQUEUE_IMPL
-
 #include <stdlib.h>
 #include <limits.h>
 
@@ -33,19 +33,19 @@ heap newHeap(int (*cmp)(const void *, const void *))
 	return h;
 }
 
-int parent(int i)
+int heapParent(int child)
 {
-	return i / 2;
+	return child / 2;
 }
 
-int right(int i)
+int heapLeftChild(int parent)
 {
-	return (i * 2) + 2;
+	return (parent * 2) + 1;
 }
 
-int left(int i)
+int heapRightChild(int parent)
 {
-	return (i * 2) + 1;
+	return (parent * 2) + 2;
 }
 
 void heapifyUp(heap *h, int i)
@@ -53,16 +53,16 @@ void heapifyUp(heap *h, int i)
 	if (i == 0)
 		return;
 
-	if (h->cmp(h->vec[i], h->vec[parent(i)]) > 0) {
-		SWAP(h->vec[i], h->vec[parent(i)]);
-		heapifyUp(h, parent(i));
+	if (h->cmp(h->vec[i], h->vec[heapParent(i)]) > 0) {
+		SWAP(h->vec[i], h->vec[heapParent(i)]);
+		heapifyUp(h, heapParent(i));
 	}
 }
 
 void heapifyDown(heap *h, int i)
 {
-	int l = left(i);
-	int r = right(i);
+	int l = heapLeftChild(i);
+	int r = heapRightChild(i);
 
 	int largest = i;
 
@@ -153,5 +153,4 @@ void priorityQueueFree(priorityQueue *q, void (*freeData)(void *))
 }
 
 #endif
-
 #endif
