@@ -33,9 +33,9 @@ void mapInsertAllAp(map *m, va_list ap);
 // need to be terminated with NULL, NULL
 void mapInsertAll(map *m, ...);
 
-void *mapFind(const map m, const void *key);
+void *mapFind(const map *m, const void *key);
 
-bool mapIsExists(const map m, const void *key);
+bool mapIsExists(const map *m, const void *key);
 
 void mapRemove(map *m,
 		       const void *key,
@@ -47,15 +47,15 @@ void mapUpdate(map m,
 		       void (*freeData)(void *),
 			   void *newData);
 
-void mapOrderTraverse(const map m,
+void mapOrderTraverse(const map *m,
                       void (*action)(const void *key, const void *data, void *arg),
 					  void *arg);
 
-void mapFree(map m,
+void mapFree(map *m,
 		     void (*freeKey)(void *),
 		     void (*freeData)(void *));
 
-bool mapIsEmpty(const map m);
+bool mapIsEmpty(const map *m);
 
 // util
 void *memdup(const void *mem, const int size);
@@ -375,14 +375,14 @@ void mapInsertAll(map *m, ...)
 	va_end(ap);
 }
 
-void *mapFind(const map m, const void *key)
+void *mapFind(const map *m, const void *key)
 {
-	return avlFind(m.root, key, m.cmpKeys);
+	return avlFind(m->root, key, m->cmpKeys);
 }
 
-bool mapIsExists(const map m, const void *key)
+bool mapIsExists(const map *m, const void *key)
 {
-	return avlIsExists(m.root, key, m.cmpKeys);
+	return avlIsExists(m->root, key, m->cmpKeys);
 }
 
 void mapRemove(map *m,
@@ -401,23 +401,23 @@ void mapUpdate(map m,
 	avlUpdate(m.root, key, m.cmpKeys, freeData, newData);
 }
 
-void mapOrderTraverse(const map m,
+void mapOrderTraverse(const map *m,
                       void (*action)(const void *key, const void *data, void *arg),
 					  void *arg)
 {
-    avlOrderTraverse(m.root, action, arg);
+    avlOrderTraverse(m->root, action, arg);
 }
 
-bool mapIsEmpty(const map m)
+bool mapIsEmpty(const map *m)
 {
-    return m.root == NULL;
+    return m->root == NULL;
 }
 
-void mapFree(map m,
+void mapFree(map *m,
 		     void (*freeKey)(void *),
 		     void (*freeData)(void *))
 {
-	avlFree(m.root, freeKey, freeData);
+	avlFree(m->root, freeKey, freeData);
 }
 
 #ifndef MEMDUP
