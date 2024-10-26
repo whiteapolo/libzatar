@@ -2,8 +2,8 @@
 #define QUEUE_H
 #include "list.h"
 
-#define ADDR(element) (&((typeof(element)){element}))
-#define DUP(value) memdup(ADDR(value), sizeof(value))
+#define ADDRESS(element) (&((typeof(element)){element}))
+#define DUP(value) memdup(ADDRESS(value), sizeof(value))
 
 typedef struct {
     list *start;

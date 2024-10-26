@@ -7,7 +7,6 @@
 #include <string.h>
 #include <ctype.h>
 
-
 typedef struct {
 	char *data;
 	size_t len;

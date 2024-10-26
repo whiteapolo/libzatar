@@ -34,24 +34,5 @@
 
 int main(int argc, char **argv)
 {
-	START_CLOCK();
-	string s = newStr("");
-	for (int i = 0; s.len < 100000000; i++) {
-		strPushc(&s, '5');
-	}
-	END_CLOCK();
-	strFree(&s);
 
-// 	FILE *fp = fopen("main.c", "r");
-// 	if (fp == NULL)
-// 		return 0;
-// 	Scanner scanner = newScanner(fp);
-// 	const string *line;
-// 	while ((line = scannerNextLine(&scanner)) != NULL) {
-// 		printf("%s\n", line->data);
-// 	}
-
-// 	scannerFree(&scanner);
-// 	fclose(fp);
-// 	return 0;
 }

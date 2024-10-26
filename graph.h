@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define ADDR(element) (&((typeof(element)){element}))
-#define DUP(value) memdup(ADDR(value), sizeof(value))
+#define ADDRESS(element) (&((typeof(element)){element}))
+#define DUP(value) memdup(ADDRESS(value), sizeof(value))
 
 typedef struct {
 	char data;

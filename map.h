@@ -2,8 +2,8 @@
 #define MAP_H
 #include <stdarg.h>
 
-#define ADDR(element) (&((typeof(element)){element}))
-#define DUP(value) memdup(ADDR(value), sizeof(value))
+#define ADDRESS(element) (&((typeof(element)){element}))
+#define DUP(value) memdup(ADDRESS(value), sizeof(value))
 
 typedef int (*cmpKeysType)(const void *, const void *);
 
