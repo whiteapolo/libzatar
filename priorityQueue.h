@@ -1,6 +1,8 @@
 #ifndef PRIORITYQUEUE_H
 #define PRIORITYQUEUE_H
-#include <stdbool.h>
+
+#define ADDRESS(element) (&((typeof(element)){element}))
+#define DUP(value) memdup(ADDRESS(value), sizeof(value))
 
 typedef struct {
 	void **vec;
@@ -18,11 +20,12 @@ int priorityQueueGetSize(const priorityQueue *q);
 bool priorityQueueIsEmpty(const priorityQueue *q);
 void priorityQueueFree(priorityQueue *q, void (*freeData)(void *));
 
+void *memdup(const void *mem, const int size);
+void swap(void *a, void *b, const size_t size);
+
 #ifdef PRIORITYQUEUE_IMPL
 #include <stdlib.h>
 #include <limits.h>
-
-#define SWAP(a, b) do { typeof(a) tmp = a; a = b; b = tmp; } while (0)
 
 heap newHeap(int (*cmp)(const void *, const void *))
 {
@@ -33,19 +36,19 @@ heap newHeap(int (*cmp)(const void *, const void *))
 	return h;
 }
 
-int heapParent(int child)
+int parent(int i)
 {
-	return child / 2;
+	return i / 2;
 }
 
-int heapLeftChild(int parent)
+int right(int i)
 {
-	return (parent * 2) + 1;
+	return (i * 2) + 2;
 }
 
-int heapRightChild(int parent)
+int left(int i)
 {
-	return (parent * 2) + 2;
+	return (i * 2) + 1;
 }
 
 void heapifyUp(heap *h, int i)
@@ -53,16 +56,16 @@ void heapifyUp(heap *h, int i)
 	if (i == 0)
 		return;
 
-	if (h->cmp(h->vec[i], h->vec[heapParent(i)]) > 0) {
-		SWAP(h->vec[i], h->vec[heapParent(i)]);
-		heapifyUp(h, heapParent(i));
+	if (h->cmp(h->vec[i], h->vec[parent(i)]) > 0) {
+		swap(&h->vec[i], &h->vec[parent(i)], sizeof(void*));
+		heapifyUp(h, parent(i));
 	}
 }
 
 void heapifyDown(heap *h, int i)
 {
-	int l = heapLeftChild(i);
-	int r = heapRightChild(i);
+	int l = left(i);
+	int r = right(i);
 
 	int largest = i;
 
@@ -73,7 +76,7 @@ void heapifyDown(heap *h, int i)
 		largest = r;
 
 	if (largest != i) {
-		SWAP(h->vec[i], h->vec[largest]);
+		swap(&h->vec[i], &h->vec[largest], sizeof(void*));
 		heapifyDown(h, largest);
 	}
 }
@@ -151,6 +154,27 @@ void priorityQueueFree(priorityQueue *q, void (*freeData)(void *))
 {
 	heapFree(q, freeData);
 }
+
+#ifndef MEMDUP
+#define MEMDUP
+void *memdup(const void *mem, const int size)
+{
+	void *newMem = malloc(size);
+	memcpy(newMem, mem, size);
+	return newMem;
+}
+#endif
+
+#ifndef SWAP
+#define SWAP
+void swap(void *a, void *b, const size_t size)
+{
+	char tmp[size];
+	memcpy(tmp, a, size);
+	memcpy(a, b, size);
+	memcpy(b, tmp, size);
+}
+#endif
 
 #endif
 #endif

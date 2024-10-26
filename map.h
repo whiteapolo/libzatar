@@ -3,7 +3,7 @@
 #include <stdarg.h>
 
 #define ADDR(element) (&((typeof(element)){element}))
-#define DUP_VAL(value) memdup(ADDR(value), sizeof(value))
+#define DUP(value) memdup(ADDR(value), sizeof(value))
 
 typedef int (*cmpKeysType)(const void *, const void *);
 

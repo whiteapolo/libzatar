@@ -2,6 +2,9 @@
 #define STACK_H
 #include <stdbool.h>
 
+#define ADDR(element) (&((typeof(element)){element}))
+#define DUP(value) memdup(ADDR(value), sizeof(value))
+
 typedef struct {
 	void **data;
 	int len;
@@ -16,6 +19,7 @@ void stackFree(stack *s, void (*freeData)(void *));
 
 #ifdef STACK_IMPL
 #include <stdlib.h>
+#include <string.h>
 
 stack newStack()
 {
@@ -56,5 +60,14 @@ void stackFree(stack *s, void (*freeData)(void *))
 	free(s->data);
 }
 
+#ifndef MEMDUP
+#define MEMDUP
+void *memdup(const void *mem, const int size)
+{
+	void *newMem = malloc(size);
+	memcpy(newMem, mem, size);
+	return newMem;
+}
+#endif
 #endif
 #endif

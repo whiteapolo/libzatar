@@ -34,12 +34,13 @@
 
 int main(int argc, char **argv)
 {
-	string s = newStr("njfbrifb");
-	strToUpper(&s);
-	strToLower(&s);
-	strPushs(&s, "knoigi fjb5jugb  firgfui");
-	strPrintln(&s);
-
+	START_CLOCK();
+	string s = newStr("");
+	for (int i = 0; s.len < 100000000; i++) {
+		strPushc(&s, '5');
+	}
+	END_CLOCK();
+	strFree(&s);
 
 // 	FILE *fp = fopen("main.c", "r");
 // 	if (fp == NULL)

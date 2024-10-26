@@ -18,6 +18,7 @@ void queueFree(queue *q, void (*freeData)(void *));
 void queuePrint(const queue *q, void (*printData)(void *));
 
 #ifdef QUEUE_IMPL
+#include <string.h>
 
 queue newQueue()
 {
