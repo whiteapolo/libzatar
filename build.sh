@@ -1,2 +1,2 @@
 #!/bin/sh
-gcc -O3 -Wall main.c -o exe -g
+gcc -O0 -Wall main.c -o exe -g

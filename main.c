@@ -34,5 +34,7 @@
 
 int main(int argc, char **argv)
 {
-
+	string s = readWholeFile("/home/white/downloads/sqlite-snapshot-202409262225/sqlite3.c");
+	// strPrint(s);
+	freeStr(&s);
 }

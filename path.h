@@ -12,9 +12,6 @@ typedef enum { Ok = 0, Err = -1, } Result;
 
 typedef enum { Read = 0, Write = 1, } PipeMode;
 
-int pathGetFmtSize(const char *fmt, ...);
-int pathGetFmtSizeVa(const char *fmt, va_list ap);
-int getFileSize(FILE *fp);
 
 const char *getPathExtention(const char *path);
 const char *getHomePath();
@@ -39,6 +36,10 @@ void getFullFileName(const char *dirName, const char *fileName, char *dest, int 
 
 int nextInDir(DIR *dir, const char *dirName, char *destFileName, int destLen);
 
+int getFmtSize(const char *fmt, ...);
+int getFmtSizeVa(const char *fmt, va_list ap);
+size_t getFileSize(FILE *fp);
+
 #ifdef PATH_IMPL
 #include <sys/stat.h>
 #include <unistd.h>
@@ -46,28 +47,6 @@ int nextInDir(DIR *dir, const char *dirName, char *destFileName, int destLen);
 #include <string.h>
 #include <fcntl.h>
 
-int pathGetFmtSize(const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	const int size = vsnprintf(NULL, 0, fmt, ap);
-	va_end(ap);
-	return size;
-}
-
-int pathGetFmtSizeVa(const char *fmt, va_list ap)
-{
-	return vsnprintf(NULL, 0, fmt, ap);
-}
-
-int getFileSize(FILE *fp)
-{
-	int curr = ftell(fp);
-	fseek(fp, 0, SEEK_END);
-	const int size = ftell(fp);
-	fseek(fp, curr, SEEK_SET);
-	return size;
-}
 
 const char *getPathExtention(const char *path)
 {
@@ -275,6 +254,41 @@ Result popen2(char *path, char *argv[], FILE *ppipe[2])
 
 	return Ok;
 }
+
+#ifndef GET_FILE_SIZE
+#define GET_FILE_SIZE
+size_t getFileSize(FILE *fp)
+{
+	const size_t curr = ftell(fp);
+	fseek(fp, 0, SEEK_END);
+	const size_t size = ftell(fp);
+	fseek(fp, curr, SEEK_SET);
+	return size;
+}
+#endif
+#ifndef GET_FMT_SIZE
+#define GET_FMT_SIZE
+int getFmtSize(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	const int size = getFmtSizeVa(fmt, ap);
+	va_end(ap);
+	return size;
+}
+#endif
+
+#ifndef GET_FMT_SIZE_VA
+#define GET_FMT_SIZE_VA
+int getFmtSizeVa(const char *fmt, va_list ap)
+{
+	va_list ap1;
+	va_copy(ap1, ap);
+	const int size = vsnprintf(NULL, 0, fmt, ap1);
+	va_end(ap1);
+	return size;
+}
+#endif
 
 #endif
 #endif

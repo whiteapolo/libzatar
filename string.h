@@ -94,6 +94,7 @@ unsigned int getEditDistance(const char *s1, const char *s2);
 unsigned int getEditDistanceSlice(const strSlice s1, const strSlice s2);
 
 void swap(void *a, void *b, const size_t size);
+size_t getFileSize(FILE *fp);
 
 #ifdef STRING_IMPL
 #include <stdarg.h>
@@ -166,23 +167,7 @@ string newStrFromArray(char *s[], const size_t len, const char *delim)
 	return str;
 }
 
-int getFmtSize(const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	const int size = getFmtSizeVa(fmt, ap);
-	va_end(ap);
-	return size;
-}
 
-int getFmtSizeVa(const char *fmt, va_list ap)
-{
-	va_list ap1;
-	va_copy(ap1, ap);
-	const int size = vsnprintf(NULL, 0, fmt, ap1);
-	va_end(ap1);
-	return size;
-}
 
 void shrinkToFit(string *s)
 {
@@ -545,10 +530,11 @@ string readWholeFile(const char *fileName)
 	FILE *fp = fopen(fileName, "r");
 	if (fp == NULL)
 		return EMPTY_STR;
-	string s = newStr("");
-	char buf[BUFSIZ];
-	while (fgets(buf, sizeof(buf), fp))
-		strPushs(&s, "%s", buf);
+
+	const size_t fileSize = getFileSize(fp);
+	string s = newStrWithCapacity(fileSize + 2, "");
+	s.len = fread(s.data, sizeof(char), fileSize, fp);
+	s.data[s.len] = '\0';
 	fclose(fp);
 	return s;
 }
@@ -638,6 +624,38 @@ void swap(void *a, void *b, const size_t size)
 	memcpy(b, tmp, size);
 }
 #endif
-
+#ifndef GET_FILE_SIZE
+#define GET_FILE_SIZE
+size_t getFileSize(FILE *fp)
+{
+	const size_t curr = ftell(fp);
+	fseek(fp, 0, SEEK_END);
+	const size_t size = ftell(fp);
+	fseek(fp, curr, SEEK_SET);
+	return size;
+}
+#endif
+#ifndef GET_FMT_SIZE
+#define GET_FMT_SIZE
+int getFmtSize(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	const int size = getFmtSizeVa(fmt, ap);
+	va_end(ap);
+	return size;
+}
+#endif
+#ifndef GET_FMT_SIZE_VA
+#define GET_FMT_SIZE_VA
+int getFmtSizeVa(const char *fmt, va_list ap)
+{
+	va_list ap1;
+	va_copy(ap1, ap);
+	const int size = vsnprintf(NULL, 0, fmt, ap1);
+	va_end(ap1);
+	return size;
+}
+#endif
 #endif
 #endif
