@@ -277,7 +277,6 @@ int getFmtSize(const char *fmt, ...)
 	return size;
 }
 #endif
-
 #ifndef GET_FMT_SIZE_VA
 #define GET_FMT_SIZE_VA
 int getFmtSizeVa(const char *fmt, va_list ap)
