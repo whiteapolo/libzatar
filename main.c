@@ -32,5 +32,7 @@
 
 int main(int argc, char **argv)
 {
-
+	string s = newStr("itay mehadav");
+	string slice = newStrSlice(s, -1, 2, 1);
+	strPrintln(slice);
 }

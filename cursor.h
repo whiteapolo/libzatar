@@ -28,7 +28,7 @@ typedef enum { Ok = 0, Err = -1, } Result;
 #define B7  "\e[1;97m"  /*  BOLD WHITE   */
 #define B8  "\e[1;90m"  /*  BOLD GRAY    */
 
-enum KEY {
+enum {
     EMPTY_KEY = 999,
 
 	ARROW_LEFT = 1000,
@@ -44,16 +44,14 @@ enum KEY {
 	END = 1006,
 };
 
-enum CURSOR_STYLE {
+typedef enum {
 	BLOCK_STEADY = 0,
 	BLOCK_BLINKING = 1,
-
 	UNDERLINE_BLINKING = 3,
 	UNDERLINE_STEADY = 4,
-
 	BEAM_STEADY = 6,
 	BEAM_BLINKING = 5,
-};
+} CURSOR_STYLE;
 
 Result enableRawMode(int vminKeys, int vtime);
 Result disableRawMode();
@@ -64,7 +62,7 @@ void enableLineWrap();
 void hideCursor();
 void showCursor();
 
-void setCursorStyle(enum CURSOR_STYLE style);
+void setCursorStyle(CURSOR_STYLE style);
 
 Result getCursorPos(int *x, int *y);
 void setCursorPos(int x, int y);
@@ -101,7 +99,6 @@ int readEscapeKey();
 int readKey();
 
 #ifdef CURSOR_IMPL
-
 #include <termios.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -159,7 +156,7 @@ void showCursor()
 	printf("\e[?25h");
 }
 
-void setCursorStyle(enum CURSOR_STYLE style)
+void setCursorStyle(CURSOR_STYLE style)
 {
 	printf("\e[%d q", (int)style);
 }
