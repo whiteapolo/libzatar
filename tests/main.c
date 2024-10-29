@@ -230,35 +230,35 @@ void test_newStrSlice()
 {
 	string s = newStr("123456");
 	string slice = newStrSlice(s, -1, 0, -1);
-	assert(strIsEqual(slice, "654321"));
+	assert(strIsEqualC(slice, "654321"));
 	strFree(&slice);
 
 	slice = newStrSlice(s, 0, s.len - 1, 1);
-	assert(strIsEqual(slice, "123456"));
+	assert(strIsEqualC(slice, "123456"));
 	strFree(&slice);
 
 	slice = newStrSlice(s, 1, 4, 1);
-	assert(strIsEqual(slice, "2345"));
+	assert(strIsEqualC(slice, "2345"));
 	strFree(&slice);
 
 	slice = newStrSlice(s, 0, s.len - 1, 2);
-	assert(strIsEqual(slice, "135"));
+	assert(strIsEqualC(slice, "135"));
 	strFree(&slice);
 
 	slice = newStrSlice(s, 10, 12, 1);
-	assert(strIsEqual(slice, ""));
+	assert(strIsEqualC(slice, ""));
 	strFree(&slice);
 
 	slice = newStrSlice(s, -4, -2, 1);
-	assert(strIsEqual(slice, "345"));
+	assert(strIsEqualC(slice, "345"));
 	strFree(&slice);
 
 	slice = newStrSlice(s, 3, 3, 1);
-	assert(strIsEqual(slice, "4"));
+	assert(strIsEqualC(slice, "4"));
 	strFree(&slice);
 
 	slice = newStrSlice(s, -1, -6, -1);
-	assert(strIsEqual(slice, "654321"));
+	assert(strIsEqualC(slice, "654321"));
 	strFree(&slice);
 
 	strFree(&s);

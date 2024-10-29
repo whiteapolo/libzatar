@@ -46,26 +46,35 @@ void strPushs(string *s, const char *fmt, ...);
 void strPush(string *s, const strSlice src);
 void strPushcAt(string *s, const size_t n, const char c);
 void strPushsAt(string *s, const size_t n, const char *fmt, ...);
-
 bool strIsEmpty(const strSlice s);
-int cmpStrN(const strSlice s1, const char *s2, const size_t n);
-int cmpStr(const strSlice s1, const char *s2);
-bool strIsEqual(const strSlice s1, const char *s2);
-bool strIsEqualN(const strSlice s1, const char *s2, const int n);
+int strCmp(const strSlice s1, const strSlice s2);
+int strnCmp(const strSlice s1, const strSlice s2, size_t n);
+int strnCmpC(const strSlice s1, const char *s2, const size_t n);
+int strCmpC(const strSlice s1, const char *s2);
+bool strIsEqual(const strSlice s1, const strSlice s2);
+bool strIsEqualC(const strSlice s1, const char *s2);
+bool strnIsEqual(const strSlice s1, const strSlice s2, const size_t n);
+bool strnIsEqualC(const strSlice s1, const char *s2, const size_t n);
 
 strSlice strTokStart(const strSlice s, const char *delim);
 strSlice strTok(const strSlice s, const strSlice prevSlice, const char *delim);
 void strForEachTok(const strSlice s, const char *delim, void (*action)(const strSlice));
 
 size_t strCountc(const strSlice haystack, const char needle);
-size_t strCounts(const strSlice haystack, const char *needle);
-ssize_t strChr(const strSlice haystack, const char needle, const size_t startOffset);
-ssize_t strnChr(const strSlice haystack, const char needle, const size_t startOffset, size_t n);
-ssize_t strrChr(const strSlice haystack, const char needle, const size_t startOffset);
-ssize_t strStr(const strSlice haystack, const char *needle, const size_t startOffset);
+size_t strCounts(const strSlice haystack, const strSlice needle);
+size_t strCountsC(const strSlice haystack, const char *needle);
 
-void strReplace(string *s, const char *sub, const char *by);
-void strReplaceN(string *s, const char *sub, const char *by, size_t maxOccurrences);
+ssize_t strChr(const strSlice haystack, const char needle, const size_t startOffset, size_t occurance);
+ssize_t strrChr(const strSlice haystack, const char needle, const size_t startOffset, size_t occurance);
+ssize_t strStr(const strSlice haystack, const strSlice needle, const size_t startOffset);
+ssize_t strStrC(const strSlice haystack, const char *needle, const size_t startOffset);
+
+strSlice strExtractBetween(const strSlice s, const strSlice left, const strSlice right);
+strSlice strExtractBetweenC(const strSlice s, const char *left, const char *right);
+
+void strReplace(string *s, const char *sub, const char *by, size_t maxOccurrences);
+void strReplaceAll(string *s, const char *sub, const char *by);
+
 void strReverse(string *s);
 void strToLower(string *s);
 void strToUpper(string *s);
@@ -205,7 +214,7 @@ strSlice sliceStrRange(const strSlice s, const size_t start, const size_t end)
 {
 	strSlice slice;
 	slice.data = s.data + start;
-	slice.len = end - start;
+	slice.len = end - start + 1;
 	return slice;
 }
 
@@ -302,24 +311,48 @@ bool strIsEmpty(const strSlice s)
 	return s.len == 0;
 }
 
-int cmpStrN(const strSlice s1, const char *s2, const size_t n)
+int strCmp(const strSlice s1, const strSlice s2)
+{
+	if (s1.len > s2.len)
+		return 1;
+	if (s1.len < s2.len)
+		return -1;
+	return strncmp(s1.data, s2.data, s1.len);
+}
+
+int strnCmp(const strSlice s1, const strSlice s2, size_t n)
+{
+	return strncmp(s1.data, s2.data, n);
+}
+
+int strnCmpC(const strSlice s1, const char *s2, const size_t n)
 {
 	return strncmp(s1.data, s2, n);
 }
 
-int cmpStr(const strSlice s1, const char *s2)
+int strCmpC(const strSlice s1, const char *s2)
 {
-	return cmpStrN(s1, s2, s1.len);
+	return strnCmpC(s1, s2, s1.len);
 }
 
-bool strIsEqual(const strSlice s1, const char *s2)
+bool strIsEqual(const strSlice s1, const strSlice s2)
 {
-	return cmpStr(s1, s2) == 0;
+	return strCmp(s1, s2) == 0;
 }
 
-bool strIsEqualN(const strSlice s1, const char *s2, const int n)
+bool strIsEqualC(const strSlice s1, const char *s2)
 {
-	return cmpStrN(s1, s2, n) == 0;
+	return strCmpC(s1, s2) == 0;
+}
+
+bool strnIsEqual(const strSlice s1, const strSlice s2, const size_t n)
+{
+	return strnCmp(s1, s2, n) == 0;
+}
+
+bool strnIsEqualC(const strSlice s1, const char *s2, const size_t n)
+{
+	return strnCmpC(s1, s2, n) == 0;
 }
 
 strSlice strTokStart(const strSlice s, const char *delim)
@@ -339,7 +372,7 @@ strSlice strTok(const strSlice s, const strSlice prevSlice, const char *delim)
 	while (end < s.len && strchr(delim, s.data[end]) == NULL)
 		end++;
 
-	return sliceStrRange(s, start, end);
+	return sliceStrRange(s, start, end - 1);
 }
 
 void strForEachTok(const strSlice s, const char *delim, void (*action)(const strSlice))
@@ -360,70 +393,94 @@ size_t strCountc(const strSlice haystack, const char needle)
 	return count;
 }
 
-size_t strCounts(const strSlice haystack, const char *needle)
+size_t strCounts(const strSlice haystack, const strSlice needle)
 {
 	ssize_t count = 0;
 	ssize_t i = -1;
-
 	while ((i = strStr(haystack, needle, i + 1)) != -1)
 		count++;
-
 	return count;
 }
 
-ssize_t strChr(const strSlice haystack, const char needle, const size_t startOffset)
+size_t strCountsC(const strSlice haystack, const char *needle)
+{
+	ssize_t count = 0;
+	ssize_t i = -1;
+	while ((i = strStrC(haystack, needle, i + 1)) != -1)
+		count++;
+	return count;
+}
+
+ssize_t strChr(const strSlice haystack, const char needle, const size_t startOffset, size_t occurance)
 {
 	size_t i = startOffset;
-	while (haystack.data[i] != needle && i < haystack.len)
+	while (i < haystack.len && occurance > 0) {
+		if (haystack.data[i] == needle)
+			occurance--;
 		i++;
-	if (i == haystack.len)
-		return -1;
-	return i;
-}
-
-ssize_t strnChr(const strSlice haystack, const char needle, const size_t startOffset, size_t n)
-{
-	ssize_t ret = startOffset;
-	while (n-- > 0 && ret != -1)
-		ret = strChr(haystack, needle, ret);
-	return ret;
-}
-
-ssize_t strrChr(const strSlice haystack, const char needle, const size_t startOffset)
-{
-	ssize_t i = startOffset;
-	while (haystack.data[i] != needle && i >= 0)
-		i--;
-	if (i < 0)
-		return -1;
-	return i;
-}
-
-ssize_t strStr(const strSlice haystack, const char *needle, const size_t startOffset)
-{
-	const size_t needleLen = strlen(needle);
-	for (size_t i = startOffset; i < haystack.len - needleLen + 1; ++i) {
-		if (strIsEqual(sliceStr(haystack.data + i, needleLen), needle))
-			return i;
 	}
-
+	if (occurance == 0)
+		return i;
 	return -1;
 }
 
-void strReplace(string *s, const char *sub, const char *by)
+ssize_t strrChr(const strSlice haystack, const char needle, const size_t startOffset, size_t occurance)
 {
-	strReplaceN(s, sub, by, s->len);
+	ssize_t i = startOffset;
+	while (i >= 0 && occurance > 0) {
+		if (haystack.data[i] == needle)
+			occurance--;
+		i--;
+	}
+	if (occurance == 0)
+		return i;
+	return -1;
 }
 
-void strReplaceN(string *s, const char *sub, const char *by, size_t maxOccurrences)
+ssize_t strStr(const strSlice haystack, const strSlice needle, const size_t startOffset)
+{
+	for (size_t i = startOffset; i < haystack.len - needle.len + 1; i++)
+		if (strIsEqual(sliceStrRange(haystack, i, i + needle.len - 1), needle))
+			return i;
+	return -1;
+}
+
+ssize_t strStrC(const strSlice haystack, const char *needle, const size_t startOffset)
+{
+	return strStr(haystack, sliceStrC(needle), startOffset);
+}
+
+strSlice strExtractBetween(const strSlice s, const strSlice left, const strSlice right)
+{
+	ssize_t start = strStr(s, left, 0);
+	if (start == -1)
+		return EMPTY_STR;
+	start += left.len;
+	ssize_t end = strStr(s, right, start);
+	if (end == -1)
+		return EMPTY_STR;
+	return sliceStrRange(s, start, end - 1);
+}
+
+strSlice strExtractBetweenC(const strSlice s, const char *left, const char *right)
+{
+	return strExtractBetween(s, sliceStrC(left), sliceStrC(right));
+}
+
+void strReplaceAll(string *s, const char *sub, const char *by)
+{
+	strReplace(s, sub, by, s->len);
+}
+
+void strReplace(string *s, const char *sub, const char *by, size_t maxOccurrences)
 {
 	string result = newStr("");
 	size_t i = 0;
 	const int sublen = strlen(sub);
 
 	while (i < s->len - sublen + 1 && maxOccurrences > 0) {
-		strSlice tmp = sliceStrRange(*s, i, i + sublen);
-		if (strIsEqual(tmp, sub)) {
+		strSlice tmp = sliceStrRange(*s, i, i + sublen - 1);
+		if (strIsEqualC(tmp, sub)) {
 			strPushs(&result, "%s", by);
 			i += sublen;
 			maxOccurrences--;
@@ -437,6 +494,17 @@ void strReplaceN(string *s, const char *sub, const char *by, size_t maxOccurrenc
 
 	strFree(s);
 	*s = result;
+}
+
+void strCut(string *s, const size_t start, const size_t end)
+{
+	strSlice left = sliceStrRange(*s, 0, start - 1);
+	strSlice right = sliceStrRange(*s, end + 1, s->len - 1);
+	string tmp = newStr("");
+	strPush(&tmp, left);
+	strPush(&tmp, right);
+	strFree(s);
+	*s = tmp;
 }
 
 void strReverse(string *s)
@@ -549,7 +617,6 @@ string readWholeFile(const char *fileName)
 	FILE *fp = fopen(fileName, "r");
 	if (fp == NULL)
 		return EMPTY_STR;
-
 	const size_t fileSize = getFileSize(fp);
 	string s = newStrWithCapacity(fileSize + 2, "");
 	s.len = fread(s.data, sizeof(char), fileSize, fp);

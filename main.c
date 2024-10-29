@@ -32,7 +32,7 @@
 
 int main()
 {
-	string s = newStr("itay mehadav");
-	string slice = newStrSlice(s, -1, 2, 1);
-	strPrintln(slice);
+	string s = readWholeFile("/etc/os-release");
+	strSlice name = strExtractBetweenC(s, "PRETTY_NAME=\"", "\"");
+	strPrintln(name);
 }
