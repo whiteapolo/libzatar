@@ -28,6 +28,7 @@ string newStrWithCapacity(const size_t initialCapacity, const char *fmt, ...);
 string newStrVa(const size_t minSize, const char *fmt, va_list ap);
 string newStrFromExisting(const strSlice s);
 string newStrFromArray(char *s[], const size_t len, const char *delim);
+string newStrSlice(const strSlice s, ssize_t start, ssize_t end, const ssize_t step);
 
 int getFmtSize(const char *fmt, ...);
 int getFmtSizeVa(const char *fmt, va_list ap);
@@ -36,7 +37,7 @@ void shrinkToFit(string *s);
 strSlice sliceStr(const char *s, const size_t len);
 strSlice sliceStrRange(const strSlice s, const size_t start, const size_t end);
 strSlice sliceStrC(const char *s);
-void clearStr(string *s);
+void strClear(string *s);
 
 void strPushc(string *s, const char c);
 char strTopc(const strSlice s);
@@ -49,8 +50,8 @@ void strPushsAt(string *s, const size_t n, const char *fmt, ...);
 bool isStrEmpty(const strSlice s);
 int cmpStrN(const strSlice s1, const char *s2, const size_t n);
 int cmpStr(const strSlice s1, const char *s2);
-bool isStrEqual(const strSlice s1, const char *s2);
-bool isStrEqualN(const strSlice s1, const char *s2, const int n);
+bool strIsEqual(const strSlice s1, const char *s2);
+bool strIsEqualN(const strSlice s1, const char *s2, const int n);
 
 strSlice strTokStart(const strSlice s, const char *delim);
 strSlice strTok(const strSlice s, const strSlice prevSlice, const char *delim);
@@ -76,7 +77,7 @@ long long strToNumeric(const strSlice s);
 bool strIsNumeric(const strSlice s);
 int strScanf(const strSlice s, const char *fmt, ...);
 
-void freeStr(string *s);
+void strFree(string *s);
 void strPrint(const strSlice s);
 void strPrintln(const strSlice s);
 void strDebugPrint(const strSlice s);
@@ -86,7 +87,7 @@ string readWholeFile(const char *fileName);
 
 Scanner newScanner(FILE *fp);
 const string *scannerNextLine(Scanner *scanner);
-void freeScanner(Scanner *scanner);
+void scannerFree(Scanner *scanner);
 
 size_t strDisplayedLength(const strSlice s);
 
@@ -167,12 +168,28 @@ string newStrFromArray(char *s[], const size_t len, const char *delim)
 	return str;
 }
 
-
-
 void shrinkToFit(string *s)
 {
 	s->capacity = s->len + 1;
 	s->data = realloc(s->data, sizeof(char) * s->capacity);
+}
+
+string newStrSlice(const strSlice s, ssize_t start, ssize_t end, const ssize_t step)
+{
+	if (start < 0)
+		start += s.len;
+	if (end < 0)
+		end += s.len;
+	assert(step != 0);
+
+	string slice = newStr("");
+	ssize_t i = start;
+	while (i != end && i >= 0 && i < s.len) {
+		strPushc(&slice, s.data[i]);
+		i += step;
+	}
+	strPushc(&slice, s.data[i]);
+	return slice;
 }
 
 strSlice sliceStr(const char *s, const size_t len)
@@ -196,7 +213,7 @@ strSlice sliceStrC(const char *s)
 	return sliceStr(s, strlen(s));
 }
 
-void clearStr(string *s)
+void strClear(string *s)
 {
 	s->capacity = MIN_STR_SIZE;
 	s->data = realloc(s->data, sizeof(char) * s->capacity);
@@ -294,12 +311,12 @@ int cmpStr(const strSlice s1, const char *s2)
 	return cmpStrN(s1, s2, s1.len);
 }
 
-bool isStrEqual(const strSlice s1, const char *s2)
+bool strIsEqual(const strSlice s1, const char *s2)
 {
 	return cmpStr(s1, s2) == 0;
 }
 
-bool isStrEqualN(const strSlice s1, const char *s2, const int n)
+bool strIsEqualN(const strSlice s1, const char *s2, const int n)
 {
 	return cmpStrN(s1, s2, n) == 0;
 }
@@ -385,7 +402,7 @@ size_t strStr(const strSlice haystack, const char *needle, const size_t startOff
 {
 	const size_t needleLen = strlen(needle);
 	for (size_t i = startOffset; i < haystack.len - needleLen + 1; ++i) {
-		if (isStrEqual(sliceStr(haystack.data + i, needleLen), needle))
+		if (strIsEqual(sliceStr(haystack.data + i, needleLen), needle))
 			return i;
 	}
 
@@ -405,7 +422,7 @@ void strReplaceN(string *s, const char *sub, const char *by, size_t maxOccurrenc
 
 	while (i < s->len - sublen + 1 && maxOccurrences > 0) {
 		strSlice tmp = sliceStrRange(*s, i, i + sublen);
-		if (isStrEqual(tmp, sub)) {
+		if (strIsEqual(tmp, sub)) {
 			strPushs(&result, "%s", by);
 			i += sublen;
 			maxOccurrences--;
@@ -417,7 +434,7 @@ void strReplaceN(string *s, const char *sub, const char *by, size_t maxOccurrenc
 	// push the rest of the string
 	strPushs(&result, "%.*s", s->len - i, s->data + i);
 
-	freeStr(s);
+	strFree(s);
 	*s = result;
 }
 
@@ -495,8 +512,9 @@ int strScanf(const strSlice s, const char *fmt, ...)
 	return ret;
 }
 
-void freeStr(string *s)
+void strFree(string *s)
 {
+	assert(s->data != NULL);
 	free(s->data);
 }
 
@@ -559,7 +577,7 @@ const string *scannerNextLine(Scanner *scanner)
 	return &scanner->line;
 }
 
-void freeScanner(Scanner *scanner)
+void scannerFree(Scanner *scanner)
 {
 	free(scanner->line.data);
 }

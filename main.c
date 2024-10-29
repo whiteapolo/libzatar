@@ -30,7 +30,6 @@
 #define PRIORITYQUEUE_IMPL
 #include "priorityQueue.h"
 
-
 int main(int argc, char **argv)
 {
 

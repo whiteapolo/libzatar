@@ -168,10 +168,109 @@ void testQueue()
     printf("Test Completed: Queue memory freed.\n");
 }
 
+void printMapEntry(const void *key, const void *data, void *arg)
+{
+    printf("Key: %d, Data: %d\n", *(int *)key, *(int *)data);
+}
+
+void testMap()
+{
+    map m = newMap(cmpInt);
+
+    if (mapIsEmpty(&m))
+        printf(GREEN "Test Passed: Map is initially empty.\n" RESET);
+    else
+        printf(RED "Test Failed: Map should be initially empty.\n" RESET);
+
+    int key1 = 1, data1 = 100;
+    mapInsert(&m, &key1, &data1);
+    if (mapIsExists(&m, &key1))
+        printf(GREEN "Test Passed: Key 1 exists after insertion.\n" RESET);
+    else
+        printf(RED "Test Failed: Key 1 should exist after insertion.\n" RESET);
+
+    int *foundData = (int *)mapFind(&m, &key1);
+    if (foundData && *foundData == data1)
+        printf(GREEN "Test Passed: Correct value found for key 1.\n" RESET);
+    else
+        printf(RED "Test Failed: Incorrect value found for key 1. Expected %d, got %d.\n" RESET, data1, foundData ? *foundData : -1);
+
+    int key2 = 2, data2 = 200;
+    int key3 = 3, data3 = 300;
+    mapInsert(&m, &key2, &data2);
+    mapInsert(&m, &key3, &data3);
+
+    if (mapIsExists(&m, &key2) && mapIsExists(&m, &key3))
+        printf(GREEN "Test Passed: Keys 2 and 3 exist after insertion.\n" RESET);
+    else
+        printf(RED "Test Failed: Keys 2 and/or 3 should exist after insertion.\n" RESET);
+
+    int newData2 = 250;
+    mapUpdate(m, &key2, NULL, &newData2);
+    foundData = (int *)mapFind(&m, &key2);
+    if (foundData && *foundData == newData2)
+        printf(GREEN "Test Passed: Key 2 updated successfully.\n" RESET);
+    else
+        printf(RED "Test Failed: Key 2 update failed. Expected %d, got %d.\n" RESET, newData2, foundData ? *foundData : -1);
+
+    mapRemove(&m, &key1, NULL, NULL);
+    if (!mapIsExists(&m, &key1))
+        printf(GREEN "Test Passed: Key 1 removed successfully.\n" RESET);
+    else
+        printf(RED "Test Failed: Key 1 should be removed.\n" RESET);
+
+    printf("Map contents after operations:\n");
+    mapOrderTraverse(&m, printMapEntry, NULL);
+
+    mapFree(&m, NULL, NULL);
+    printf("Test Completed: Map memory freed.\n");
+}
+
+void test_newStrSlice()
+{
+	string s = newStr("123456");
+	string slice = newStrSlice(s, -1, 0, -1);
+	assert(strIsEqual(slice, "654321"));
+	strFree(&slice);
+
+	slice = newStrSlice(s, 0, s.len - 1, 1);
+	assert(strIsEqual(slice, "123456"));
+	strFree(&slice);
+
+	slice = newStrSlice(s, 1, 4, 1);
+	assert(strIsEqual(slice, "2345"));
+	strFree(&slice);
+
+	slice = newStrSlice(s, 0, s.len - 1, 2);
+	assert(strIsEqual(slice, "135"));
+	strFree(&slice);
+
+	slice = newStrSlice(s, 10, 12, 1);
+	assert(strIsEqual(slice, ""));
+	strFree(&slice);
+
+	slice = newStrSlice(s, -4, -2, 1);
+	assert(strIsEqual(slice, "345"));
+	strFree(&slice);
+
+	slice = newStrSlice(s, 3, 3, 1);
+	assert(strIsEqual(slice, "4"));
+	strFree(&slice);
+
+	slice = newStrSlice(s, -1, -6, -1);
+	assert(strIsEqual(slice, "654321"));
+	strFree(&slice);
+
+	strFree(&s);
+	printf("All tests passed.\n");
+}
+
 int main()
 {
+	test_newStrSlice();
 	testPriorityQueue();
 	testStack();
 	testQueue();
+	testMap();
 	return 0;
 }
