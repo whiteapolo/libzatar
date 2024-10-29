@@ -59,10 +59,10 @@ void strForEachTok(const strSlice s, const char *delim, void (*action)(const str
 
 size_t strCountc(const strSlice haystack, const char needle);
 size_t strCounts(const strSlice haystack, const char *needle);
-size_t strChr(const strSlice haystack, const char needle, const size_t startOffset);
-size_t strnChr(const strSlice haystack, const char needle, const size_t startOffset, size_t n);
-size_t strrChr(const strSlice haystack, const char needle, const size_t startOffset);
-size_t strStr(const strSlice haystack, const char *needle, const size_t startOffset);
+ssize_t strChr(const strSlice haystack, const char needle, const size_t startOffset);
+ssize_t strnChr(const strSlice haystack, const char needle, const size_t startOffset, size_t n);
+ssize_t strrChr(const strSlice haystack, const char needle, const size_t startOffset);
+ssize_t strStr(const strSlice haystack, const char *needle, const size_t startOffset);
 
 void strReplace(string *s, const char *sub, const char *by);
 void strReplaceN(string *s, const char *sub, const char *by, size_t maxOccurrences);
@@ -184,7 +184,7 @@ string newStrSlice(const strSlice s, ssize_t start, ssize_t end, const ssize_t s
 
 	string slice = newStr("");
 	ssize_t i = start;
-	while (i != end && i >= 0 && i < s.len) {
+	while (i != (ssize_t)end && i >= 0 && (size_t)i < s.len) {
 		strPushc(&slice, s.data[i]);
 		i += step;
 	}
@@ -329,16 +329,16 @@ strSlice strTokStart(const strSlice s, const char *delim)
 
 strSlice strTok(const strSlice s, const strSlice prevSlice, const char *delim)
 {
-	const char *start = prevSlice.data + prevSlice.len;
-	int len = 0;
+	size_t start = prevSlice.data + prevSlice.len - s.data;
 
-	while (*start != '\0' && strchr(delim, *start) != NULL)
+	while (start < s.len && strchr(delim, s.data[start]) != NULL)
 		start++;
 
-	while (start[len] != '\0' && strchr(delim, start[len]) == NULL)
-		len++;
+	size_t end = start;
+	while (end < s.len && strchr(delim, s.data[end]) == NULL)
+		end++;
 
-	return sliceStr(start, len);
+	return sliceStrRange(s, start, end);
 }
 
 void strForEachTok(const strSlice s, const char *delim, void (*action)(const strSlice))
@@ -361,8 +361,8 @@ size_t strCountc(const strSlice haystack, const char needle)
 
 size_t strCounts(const strSlice haystack, const char *needle)
 {
-	size_t count = 0;
-	size_t i = -1;
+	ssize_t count = 0;
+	ssize_t i = -1;
 
 	while ((i = strStr(haystack, needle, i + 1)) != -1)
 		count++;
@@ -370,7 +370,7 @@ size_t strCounts(const strSlice haystack, const char *needle)
 	return count;
 }
 
-size_t strChr(const strSlice haystack, const char needle, const size_t startOffset)
+ssize_t strChr(const strSlice haystack, const char needle, const size_t startOffset)
 {
 	size_t i = startOffset;
 	while (haystack.data[i] != needle && i < haystack.len)
@@ -380,17 +380,17 @@ size_t strChr(const strSlice haystack, const char needle, const size_t startOffs
 	return i;
 }
 
-size_t strnChr(const strSlice haystack, const char needle, const size_t startOffset, size_t n)
+ssize_t strnChr(const strSlice haystack, const char needle, const size_t startOffset, size_t n)
 {
-	size_t ret = startOffset;
+	ssize_t ret = startOffset;
 	while (n-- > 0 && ret != -1)
 		ret = strChr(haystack, needle, ret);
 	return ret;
 }
 
-size_t strrChr(const strSlice haystack, const char needle, const size_t startOffset)
+ssize_t strrChr(const strSlice haystack, const char needle, const size_t startOffset)
 {
-	size_t i = startOffset;
+	ssize_t i = startOffset;
 	while (haystack.data[i] != needle && i >= 0)
 		i--;
 	if (i < 0)
@@ -398,7 +398,7 @@ size_t strrChr(const strSlice haystack, const char needle, const size_t startOff
 	return i;
 }
 
-size_t strStr(const strSlice haystack, const char *needle, const size_t startOffset)
+ssize_t strStr(const strSlice haystack, const char *needle, const size_t startOffset)
 {
 	const size_t needleLen = strlen(needle);
 	for (size_t i = startOffset; i < haystack.len - needleLen + 1; ++i) {
@@ -483,8 +483,8 @@ bool strIsNumeric(const strSlice s)
 
 void strTrimCset(string *s, const char *cset)
 {
-	int start = 0;
-	int end = s->len - 1;
+	size_t start = 0;
+	size_t end = s->len - 1;
 
 	while (start < s->len && strchr(cset, s->data[start]))
 		start++;
@@ -569,9 +569,10 @@ Scanner newScanner(FILE *fp)
 
 const string *scannerNextLine(Scanner *scanner)
 {
-	scanner->line.len = getline(&scanner->line.data, &scanner->line.capacity, scanner->fp);
-	if (scanner->line.len == -1)
+	ssize_t len = getline(&scanner->line.data, &scanner->line.capacity, scanner->fp);
+	if (len == -1)
 		return NULL;
+	scanner->line.len = len;
 	if (scanner->line.len > 0 && scanner->line.data[scanner->line.len - 1] == '\n')
 		scanner->line.data[scanner->line.len - 1] = '\0';
 	return &scanner->line;

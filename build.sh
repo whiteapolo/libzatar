@@ -1,2 +1,2 @@
 #!/bin/sh
-gcc -O0 -Wall main.c -o exe -g
+gcc -O0 -Wall -Wextra main.c -o exe -g
