@@ -152,7 +152,7 @@ string newStrVa(const size_t minSize, const char *fmt, va_list ap)
 	va_copy(ap1, ap);
 	vsnprintf(s.data, s.capacity, fmt, ap1);
 	va_end(ap1);
-    return s;
+	return s;
 }
 
 string newStrFromExisting(const strSlice s)
@@ -520,12 +520,12 @@ void strFree(string *s)
 
 void strPrint(const strSlice s)
 {
-    printf("%.*s", (int)s.len, s.data);
+	printf("%.*s", (int)s.len, s.data);
 }
 
 void strPrintln(const strSlice s)
 {
-    printf("%.*s\n", (int)s.len, s.data);
+	printf("%.*s\n", (int)s.len, s.data);
 }
 
 void strDebugPrint(const strSlice s)
@@ -584,8 +584,8 @@ void scannerFree(Scanner *scanner)
 
 size_t strDisplayedLength(const strSlice s)
 {
-    bool escapeSeq = false;
-    size_t len = 0;
+	bool escapeSeq = false;
+	size_t len = 0;
 
 	for (size_t i = 0; i < s.len; i++) {
 		const char c = s.data[i];
@@ -601,7 +601,7 @@ size_t strDisplayedLength(const strSlice s)
 			len++;
 	}
 
-    return len;
+	return len;
 }
 
 unsigned int getEditDistance(const char *s1, const char *s2)
