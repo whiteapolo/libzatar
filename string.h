@@ -189,6 +189,7 @@ string newStrSlice(const strSlice s, ssize_t start, ssize_t end, const ssize_t s
 		i += step;
 	}
 	strPushc(&slice, s.data[i]);
+	strPushc(&slice, '\0');
 	return slice;
 }
 
