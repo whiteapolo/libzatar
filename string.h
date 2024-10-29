@@ -47,7 +47,7 @@ void strPush(string *s, const strSlice src);
 void strPushcAt(string *s, const size_t n, const char c);
 void strPushsAt(string *s, const size_t n, const char *fmt, ...);
 
-bool isStrEmpty(const strSlice s);
+bool strIsEmpty(const strSlice s);
 int cmpStrN(const strSlice s1, const char *s2, const size_t n);
 int cmpStr(const strSlice s1, const char *s2);
 bool strIsEqual(const strSlice s1, const char *s2);
@@ -296,7 +296,7 @@ void strPushsAt(string *s, const size_t n, const char *fmt, ...)
 	s->len += len - 1;
 }
 
-bool isStrEmpty(const strSlice s)
+bool strIsEmpty(const strSlice s)
 {
 	return s.len == 0;
 }
@@ -344,7 +344,7 @@ strSlice strTok(const strSlice s, const strSlice prevSlice, const char *delim)
 void strForEachTok(const strSlice s, const char *delim, void (*action)(const strSlice))
 {
 	strSlice slice = strTokStart(s, delim);
-	while (!isStrEmpty(slice)) {
+	while (!strIsEmpty(slice)) {
 		action(slice);
 		slice = strTok(s, slice, delim);
 	}
