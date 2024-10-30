@@ -12,7 +12,6 @@ typedef enum { Ok = 0, Err = -1, } Result;
 
 typedef enum { Read = 0, Write = 1, } PipeMode;
 
-
 const char *getPathExtention(const char *path);
 const char *getHomePath();
 void expandPath(char *path, const int maxLen);
@@ -22,9 +21,9 @@ bool isExtentionEqual(const char *path, const char *extention);
 int dirTraverse(const char *dir, bool (*action)(const char *));
 int traverseFile(const char *fileName, const int bufSize, bool (*action)(char[bufSize]));
 
-bool isdir(const char *path);
-bool isregfile(const char *fileName);
-bool isfile(const char *fileName);
+bool isDir(const char *path);
+bool isRegularFile(const char *fileName);
+bool isPathExists(const char *path);
 
 int echoFileWrite(const char *fileName, const char *fmt, ...);
 int echoFileAppend(const char *fileName, const char *fmt, ...);
@@ -34,7 +33,7 @@ int popen2(char *path, char *argv[], FILE *ppipe[2]);
 
 void getFullFileName(const char *dirName, const char *fileName, char *dest, int destLen);
 
-int nextInDir(DIR *dir, const char *dirName, char *destFileName, int destLen);
+int nextInDir(DIR *dir, const char *dirName, char *destFileName, const int destLen);
 
 int getFmtSize(const char *fmt, ...);
 int getFmtSizeVa(const char *fmt, va_list ap);
@@ -46,7 +45,6 @@ size_t getFileSize(FILE *fp);
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-
 
 const char *getPathExtention(const char *path)
 {
@@ -85,7 +83,7 @@ void compressPath(char *path)
 	}
 }
 
-Result nextInDir(DIR *dir, const char *dirName, char *destFileName, int destLen)
+Result nextInDir(DIR *dir, const char *dirName, char *destFileName, const int destLen)
 {
 	struct dirent *de;
 	de = readdir(dir);
@@ -121,23 +119,23 @@ bool isExtentionEqual(const char *path, const char *extention)
 	return strcmp(getPathExtention(path), extention) == 0;
 }
 
-bool isdir(const char *path)
+bool isDir(const char *path)
 {
 	struct stat sb;
 	stat(path, &sb);
 	return S_ISDIR(sb.st_mode);
 }
 
-bool isregfile(const char *fileName)
+bool isRegularFile(const char *path)
 {
 	struct stat sb;
-	stat(fileName, &sb);
+	stat(path, &sb);
 	return S_ISREG(sb.st_mode);
 }
 
-bool isfile(const char *fileName)
+bool isPathExists(const char *path)
 {
-	return !access(fileName, F_OK);
+	return !access(path, F_OK);
 }
 
 Result echoFileWrite(const char *fileName, const char *fmt, ...)
@@ -288,6 +286,5 @@ int getFmtSizeVa(const char *fmt, va_list ap)
 	return size;
 }
 #endif
-
 #endif
 #endif

@@ -30,14 +30,10 @@ string newStrFromExisting(const strSlice s);
 string newStrFromArray(char *s[], const size_t len, const char *delim);
 string newStrSlice(const strSlice s, ssize_t start, ssize_t end, const ssize_t step);
 
-int getFmtSize(const char *fmt, ...);
-int getFmtSizeVa(const char *fmt, va_list ap);
-
 void shrinkToFit(string *s);
 strSlice sliceStr(const char *s, const size_t len);
 strSlice sliceStrRange(const strSlice s, const size_t start, const size_t end);
 strSlice sliceStrC(const char *s);
-void strClear(string *s);
 
 void strPushc(string *s, const char c);
 char strTopc(const strSlice s);
@@ -86,6 +82,7 @@ long long strToNumeric(const strSlice s);
 bool strIsNumeric(const strSlice s);
 int strScanf(const strSlice s, const char *fmt, ...);
 
+void strClear(string *s);
 void strFree(string *s);
 void strPrint(const strSlice s);
 void strPrintln(const strSlice s);
@@ -100,9 +97,11 @@ void scannerFree(Scanner *scanner);
 
 size_t strDisplayedLength(const strSlice s);
 
-unsigned int getEditDistance(const char *s1, const char *s2);
-unsigned int getEditDistanceSlice(const strSlice s1, const strSlice s2);
+unsigned int getEditDistanceC(const char *s1, const char *s2);
+unsigned int getEditDistance(const strSlice s1, const strSlice s2);
 
+int getFmtSize(const char *fmt, ...);
+int getFmtSizeVa(const char *fmt, va_list ap);
 void swap(void *a, void *b, const size_t size);
 size_t getFileSize(FILE *fp);
 
@@ -177,12 +176,6 @@ string newStrFromArray(char *s[], const size_t len, const char *delim)
 	return str;
 }
 
-void shrinkToFit(string *s)
-{
-	s->capacity = s->len + 1;
-	s->data = realloc(s->data, sizeof(char) * s->capacity);
-}
-
 string newStrSlice(const strSlice s, ssize_t start, ssize_t end, const ssize_t step)
 {
 	if (start < 0)
@@ -200,6 +193,14 @@ string newStrSlice(const strSlice s, ssize_t start, ssize_t end, const ssize_t s
 	strPushc(&slice, s.data[i]);
 	strPushc(&slice, '\0');
 	return slice;
+}
+
+void shrinkToFit(string *s)
+{
+	if (s->capacity > s->len + 1) {
+		s->capacity = s->len + 1;
+		s->data = realloc(s->data, sizeof(char) * s->capacity);
+	}
 }
 
 strSlice sliceStr(const char *s, const size_t len)
@@ -673,12 +674,12 @@ size_t strDisplayedLength(const strSlice s)
 	return len;
 }
 
-unsigned int getEditDistance(const char *s1, const char *s2)
+unsigned int getEditDistanceC(const char *s1, const char *s2)
 {
-	return getEditDistanceSlice(sliceStrC(s1), sliceStrC(s2));
+	return getEditDistance(sliceStrC(s1), sliceStrC(s2));
 }
 
-unsigned int getEditDistanceSlice(const strSlice s1, const strSlice s2)
+unsigned int getEditDistance(const strSlice s1, const strSlice s2)
 {
 	unsigned int row[s1.len + 1];
 

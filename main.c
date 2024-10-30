@@ -32,7 +32,5 @@
 
 int main()
 {
-	string s = readWholeFile("/etc/os-release");
-	strSlice name = strExtractBetweenC(s, "PRETTY_NAME=\"", "\"");
-	strPrintln(name);
+	printf("%d\n", isPathExists("..."));
 }
