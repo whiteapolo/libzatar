@@ -1,31 +1,5 @@
-#ifndef STACK_H
-#define STACK_H
-#include <stdbool.h>
-#include <stdlib.h>
-
-#define ADDRESS(element) (&((typeof(element)){element}))
-#define DUP(value) memdup(ADDRESS(value), sizeof(value))
-
-typedef struct {
-	void **data;
-	size_t len;
-	size_t capacity;
-} stack;
-
-const size_t MIN_STACK_CAPACITY = 16;
-
-stack newStack();
-stack newStackWithCapacity(const size_t capacity);
-void stackPush(stack *s, void *data);
-void *stackPop(stack *s);
-void *stackTop(const stack *s);
-size_t stackGetSize(const stack *s);
-bool stackIsEmpty(const stack *s);
-void stackShrinkToFit(stack *s);
-void stackFree(stack *s, void (*freeData)(void *));
-
-#ifdef STACK_IMPL
 #include <string.h>
+#include "stack.h"
 
 stack newStack()
 {
@@ -83,15 +57,3 @@ void stackFree(stack *s, void (*freeData)(void *))
 			freeData(s->data[i]);
 	free(s->data);
 }
-
-#ifndef MEMDUP
-#define MEMDUP
-void *memdup(const void *mem, const size_t size)
-{
-	void *newMem = malloc(size);
-	memcpy(newMem, mem, size);
-	return newMem;
-}
-#endif
-#endif
-#endif

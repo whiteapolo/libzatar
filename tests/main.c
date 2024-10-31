@@ -1,30 +1,13 @@
 #include <assert.h>
 #include <stdio.h>
-#define STACK_IMPL
 #include "../stack.h"
-
-#define GRAPH_IMPL
 #include "../graph.h"
-
-#define STRING_IMPL
 #include "../string.h"
-
-#define PATH_IMPL
 #include "../path.h"
-
-#define CURSOR_IMPL
 #include "../cursor.h"
-
-#define MAP_IMPL
 #include "../map.h"
-
-#define LIST_IMPL
 #include "../list.h"
-
-#define QUEUE_IMPL
 #include "../queue.h"
-
-#define PRIORITYQUEUE_IMPL
 #include "../priorityQueue.h"
 
 const char *GREEN = "\033[1;32m";

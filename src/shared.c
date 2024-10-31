@@ -1,6 +1,4 @@
-#ifndef SHARED_H
-#define SHARED_H
-
+#include "shared.h"
 
 void swap(void *a, void *b, const size_t size)
 {
@@ -36,5 +34,3 @@ int getFmtSizeVa(const char *fmt, va_list ap)
 	va_end(ap1);
 	return size;
 }
-
-#endif

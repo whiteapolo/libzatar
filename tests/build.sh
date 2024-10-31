@@ -1,2 +1,2 @@
 #!/bin/sh
-gcc -Wall main.c -o exe -g
+gcc -Wall main.c -L.. -lmystb -o exe -g

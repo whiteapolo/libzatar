@@ -1,31 +1,6 @@
-#ifndef PRIORITYQUEUE_H
-#define PRIORITYQUEUE_H
-
-#define ADDRESS(element) (&((typeof(element)){element}))
-#define DUP(value) memdup(ADDRESS(value), sizeof(value))
-
-typedef struct {
-	void **vec;
-	int size;
-	int (*cmp)(const void *, const void *);
-} heap;
-
-typedef heap priorityQueue;
-
-priorityQueue newPriorityQueue(int (*cmp)(const void *, const void *));
-void priorityQueuePush(priorityQueue *q, void *data);
-void *priorityQueuePop(priorityQueue *q);
-const void *priorityQueuePeek(const priorityQueue *q);
-int priorityQueueGetSize(const priorityQueue *q);
-bool priorityQueueIsEmpty(const priorityQueue *q);
-void priorityQueueFree(priorityQueue *q, void (*freeData)(void *));
-
-void *memdup(const void *mem, const size_t size);
-void swap(void *a, void *b, const size_t size);
-
-#ifdef PRIORITYQUEUE_IMPL
 #include <stdlib.h>
 #include <limits.h>
+#include "priorityQueue.h"
 
 heap newHeap(int (*cmp)(const void *, const void *))
 {
@@ -154,25 +129,3 @@ void priorityQueueFree(priorityQueue *q, void (*freeData)(void *))
 {
 	heapFree(q, freeData);
 }
-
-#ifndef MEMDUP
-#define MEMDUP
-void *memdup(const void *mem, const size_t size)
-{
-	void *newMem = malloc(size);
-	memcpy(newMem, mem, size);
-	return newMem;
-}
-#endif
-#ifndef SWAP
-#define SWAP
-void swap(void *a, void *b, const size_t size)
-{
-	char tmp[size];
-	memcpy(tmp, a, size);
-	memcpy(a, b, size);
-	memcpy(b, tmp, size);
-}
-#endif
-#endif
-#endif

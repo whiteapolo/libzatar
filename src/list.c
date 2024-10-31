@@ -1,31 +1,5 @@
-#ifndef LLL_H
-#define LLL_H
-#include <stdlib.h>
-#include <string.h>
-#include <string.h>
+#include "list.h"
 
-#define ADDRESS(element) (&((typeof(element)){element}))
-#define DUP(value) memdup(ADDRESS(value), sizeof(value))
-
-typedef struct list{
-	struct list *next;
-	void *data;
-} list;
-
-list *newList();
-void listPush(list **m, void *data);
-void *listPop(list **m);
-void listInsertAfter(list *l, void *data);
-void *listRemoveAfter(list *l);
-void listFree(list **m, void (*freeData)(void *));
-void listInsertEnd(list *l, void *data);
-void listPrint(const list *l, void (*printData)(void*));
-const list *listGetLast(const list *l);
-void listReverse(list **lst);
-
-void *memdup(const void *mem, const size_t size);
-
-#ifdef LIST_IMPL
 list *newList()
 {
 	return NULL;
@@ -106,15 +80,3 @@ void listReverse(list **lst)
 
 	*lst = left;
 }
-
-#ifndef MEMDUP
-#define MEMDUP
-void *memdup(const void *mem, const size_t size)
-{
-	void *newMem = malloc(size);
-	memcpy(newMem, mem, size);
-	return newMem;
-}
-#endif
-#endif
-#endif
