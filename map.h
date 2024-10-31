@@ -23,7 +23,7 @@ typedef struct {
 map newMap(int (*cmpKeys)(const void *, const void *));
 map newMapFrom(int (*cmpKeys)(const void *, const void *), void *key, void *data, ...);
 void mapInsert(map *m, void *key, void *data);
-void mapInsertAllAp(map *m, va_list ap);
+void mapInsertAllVa(map *m, va_list ap);
 // need to be terminated with NULL, NULL
 void mapInsertAll(map *m, ...);
 void *mapFind(const map *m, const void *key);
@@ -157,30 +157,25 @@ void *avlFind(const avlNode *root, const void *key, int (*cmpKeys)(const void *,
 
 void avlInsert(avlNode **root, void *key, void *data, int (*cmpKeys)(const void *,const void *))
 {
-	if (*root == NULL)
-		return (void)(*root = makeNode(key, data));
-
-	else if (cmpKeys(key, (*root)->key) > 0)
+	if (*root == NULL) {
+		*root = makeNode(key, data);
+		return;
+	} else if (cmpKeys(key, (*root)->key) > 0) {
 		avlInsert(&(*root)->right, key, data, cmpKeys);
-
-	else
+	} else {
 		avlInsert(&(*root)->left, key, data, cmpKeys);
-
+	}
 
 	updateHeight(*root);
 	const int bf = getBalanceFactor(*root);
 	const int cmpRes = cmpKeys(key, (*root)->key);
 
-
 	if (bf > 1 && cmpRes < 0)
 		rightRotate(root);
-
 	else if (bf < -1 && cmpRes > 0)
 		leftRotate(root);
-
 	else if (bf > 1 && cmpRes > 0)
 		leftRightRotate(root);
-
 	else if (bf < -1 && cmpRes < 0)
 		rightLeftRotate(root);
 }
@@ -189,13 +184,12 @@ void avlRemove(avlNode **root, const void *key, int (*cmpKeys)(const void *,cons
 {
 	if (*root == NULL) {
 		return;
-
 	} else if (cmpKeys(key, (*root)->key) > 0) {
-		return avlRemove(&((*root)->right), key, cmpKeys, freeKey, freeData);
-
+		avlRemove(&((*root)->right), key, cmpKeys, freeKey, freeData);
+		return;
 	} else if (cmpKeys(key, (*root)->key) < 0) {
-		return avlRemove(&((*root)->left), key, cmpKeys, freeKey, freeData);
-
+		avlRemove(&((*root)->left), key, cmpKeys, freeKey, freeData);
+		return;
 	} else {
 		if (freeKey)
 			freeKey((*root)->key);
@@ -228,17 +222,12 @@ void avlRemove(avlNode **root, const void *key, int (*cmpKeys)(const void *,cons
 
 	if (bf > 1 && getBalanceFactor((*root)->left) >= 0)
 		rightRotate(root);
-
 	else if (bf < -1 && getBalanceFactor((*root)->right) <= 0)
 		leftRotate(root);
-
 	else if (bf > 1 && getBalanceFactor((*root)->left) < 0)
 		leftRightRotate(root);
-
 	else if (bf < -1 && getBalanceFactor((*root)->right) > 0)
 		rightLeftRotate(root);
-
-	return;
 }
 
 void avlUpdate(avlNode *root, const void *key, int (*cmpKeys)(const void *,const void *), void (*freeData)(void *), void *newData)
@@ -295,7 +284,7 @@ map newMapFrom(int (*cmpKeys)(const void *, const void *), void *key, void *data
 	mapInsert(&m, key, data);
 	va_list ap;
 	va_start(ap, data);
-	mapInsertAllAp(&m, ap);
+	mapInsertAllVa(&m, ap);
 	va_end(ap);
 	return m;
 }
@@ -305,7 +294,7 @@ void mapInsert(map *m, void *key, void *data)
 	avlInsert(&m->root, key, data, m->cmpKeys);
 }
 
-void mapInsertAllAp(map *m, va_list ap)
+void mapInsertAllVa(map *m, va_list ap)
 {
 	void *key = va_arg(ap, void *);
 	void *data = va_arg(ap, void *);
@@ -322,7 +311,7 @@ void mapInsertAll(map *m, ...)
 {
 	va_list ap;
 	va_start(ap, m);
-	mapInsertAllAp(m, ap);
+	mapInsertAllVa(m, ap);
 	va_end(ap);
 }
 
@@ -338,7 +327,7 @@ bool mapIsExists(const map *m, const void *key)
 
 void mapRemove(map *m, const void *key, void (*freeKey)(void *), void (*freeData)(void *))
 {
-	return avlRemove(&m->root, key, m->cmpKeys, freeKey, freeData);
+	avlRemove(&m->root, key, m->cmpKeys, freeKey, freeData);
 }
 
 void mapUpdate(map m, const void *key, void (*freeData)(void *), void *newData)

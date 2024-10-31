@@ -8,25 +8,25 @@ typedef enum { Ok = 0, Err = -1, } Result;
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
-#define C0  "\e[0m"     /*  RESET        */
+#define C0  "\033[0m"     /*  RESET        */
 
-#define C1  "\e[0;31m"  /*  RED          */
-#define C2  "\e[0;32m"  /*  GREEN        */
-#define C3  "\e[0;33m"  /*  YELLOW       */
-#define C4  "\e[0;34m"  /*  BLUE         */
-#define C5  "\e[0;035m" /*  MAGENTA      */
-#define C6  "\e[0;36m"  /*  CYAN         */
-#define C7  "\e[0;37m"  /*  WHITE        */
-#define C8  "\e[0;90m"  /*  GRAY         */
+#define C1  "\033[0;31m"  /*  RED          */
+#define C2  "\033[0;32m"  /*  GREEN        */
+#define C3  "\033[0;33m"  /*  YELLOW       */
+#define C4  "\033[0;34m"  /*  BLUE         */
+#define C5  "\033[0;035m" /*  MAGENTA      */
+#define C6  "\033[0;36m"  /*  CYAN         */
+#define C7  "\033[0;37m"  /*  WHITE        */
+#define C8  "\033[0;90m"  /*  GRAY         */
 
-#define B1  "\e[1;91m"  /*  BOLD RED     */
-#define B2  "\e[1;92m"  /*  BOLD GREEN   */
-#define B3  "\e[1;93m"  /*  BOLD YELLOW  */
-#define B4  "\e[1;94m"  /*  BOLD BLUE    */
-#define B5  "\e[1;95m"  /*  BOLD MAGENTA */
-#define B6  "\e[1;96m"  /*  BOLD CYAN    */
-#define B7  "\e[1;97m"  /*  BOLD WHITE   */
-#define B8  "\e[1;90m"  /*  BOLD GRAY    */
+#define B1  "\033[1;91m"  /*  BOLD RED     */
+#define B2  "\033[1;92m"  /*  BOLD GREEN   */
+#define B3  "\033[1;93m"  /*  BOLD YELLOW  */
+#define B4  "\033[1;94m"  /*  BOLD BLUE    */
+#define B5  "\033[1;95m"  /*  BOLD MAGENTA */
+#define B6  "\033[1;96m"  /*  BOLD CYAN    */
+#define B7  "\033[1;97m"  /*  BOLD WHITE   */
+#define B8  "\033[1;90m"  /*  BOLD GRAY    */
 
 enum {
     EMPTY_KEY = 999,
@@ -138,95 +138,95 @@ Result disableRawMode()
 
 void disableLineWrap()
 {
-	printf("\e[?7l");
+	printf("\033[?7l");
 }
 
 void enableLineWrap()
 {
-	printf("\e[?7h");
+	printf("\033[?7h");
 }
 
 void hideCursor()
 {
-	printf("\e[?25l");
+	printf("\033[?25l");
 }
 
 void showCursor()
 {
-	printf("\e[?25h");
+	printf("\033[?25h");
 }
 
 void setCursorStyle(CURSOR_STYLE style)
 {
-	printf("\e[%d q", (int)style);
+	printf("\033[%d q", (int)style);
 }
 
 Result getCursorPos(int *x, int *y)
 {
 	printf("\033[6n");
-	if (scanf("\e[%d;%dR", y, x) == 2)
+	if (scanf("\033[%d;%dR", y, x) == 2)
 		return Ok;
 	return Err;
 }
 
 void setCursorPos(int x, int y)
 {
-	printf("\e[%d;%dH", y ,x);
+	printf("\033[%d;%dH", y ,x);
 }
 
 void setCursorX(int x)
 {
-	printf("\e[%dG", x);
+	printf("\033[%dG", x);
 }
 
 void cursorUp(int n)
 {
-	printf("\e[%dA", n);
+	printf("\033[%dA", n);
 }
 
 void cursorDown(int n)
 {
-	printf("\e[%dB", n);
+	printf("\033[%dB", n);
 }
 
 void cursorRight(int n)
 {
-	printf("\e[%dC", n);
+	printf("\033[%dC", n);
 }
 
 void cursorLeft(int n)
 {
-	printf("\e[%dD", n);
+	printf("\033[%dD", n);
 }
 
 void saveCursorPos()
 {
-	printf("\e[s");
+	printf("\033[s");
 }
 
 void restoreCursorPos()
 {
-	printf("\e[u");
+	printf("\033[u");
 }
 
 void enterAlternativeScreen()
 {
-	printf("\e[?1049h");
+	printf("\033[?1049h");
 }
 
 void exitAlternativeScreen()
 {
-	printf("\e[?1049l");
+	printf("\033[?1049l");
 }
 
 void clearLine()
 {
-	printf("\e[K");
+	printf("\033[K");
 }
 
 void clearScreen()
 {
-	printf("\e[2J");
+	printf("\033[2J");
 }
 
 void updateScreen()
@@ -296,7 +296,7 @@ int readEscapeKey()
 	unsigned short key;
 
 	if (read(STDIN_FILENO, &key, 2) != 2)
-		return '\e';
+		return '\033';
 
 	switch (key) {
 		case SEQUENCE('[', 'A'): return ARROW_UP;
@@ -308,13 +308,13 @@ int readEscapeKey()
 		case SEQUENCE('[', '6'): return PAGE_DOWN; // might be with a ~
 	}
 
-	return '\e';
+	return '\033';
 }
 
 int readKey()
 {
 	char c = waitForByte();
-	if (c == '\e')
+	if (c == '\033')
 		return readEscapeKey();
 	return c;
 }
