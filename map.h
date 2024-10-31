@@ -34,7 +34,7 @@ void mapOrderTraverse(const map *m, void (*action)(const void *key, const void *
 void mapFree(map *m, void (*freeKey)(void *), void (*freeData)(void *));
 bool mapIsEmpty(const map *m);
 
-void *memdup(const void *mem, const int size);
+void *memdup(const void *mem, const size_t size);
 
 #ifdef MAP_IMPL
 #include <stdlib.h>
@@ -363,7 +363,7 @@ void mapFree(map *m, void (*freeKey)(void *), void (*freeData)(void *))
 
 #ifndef MEMDUP
 #define MEMDUP
-void *memdup(const void *mem, const int size)
+void *memdup(const void *mem, const size_t size)
 {
 	void *newMem = malloc(size);
 	memcpy(newMem, mem, size);

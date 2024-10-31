@@ -20,7 +20,7 @@ typedef struct {
 	string line;
 } Scanner;
 
-const size_t MIN_STR_SIZE = 16;
+const size_t MIN_STR_CAPACITY = 16;
 const strSlice EMPTY_STR = {0};
 
 string newStr(const char *fmt, ...);
@@ -132,7 +132,7 @@ string newStr(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	string s = newStrVa(MIN_STR_SIZE, fmt, ap);
+	string s = newStrVa(MIN_STR_CAPACITY, fmt, ap);
 	va_end(ap);
 	return s;
 }
@@ -226,7 +226,7 @@ strSlice sliceStrC(const char *s)
 
 void strClear(string *s)
 {
-	s->capacity = MIN_STR_SIZE;
+	s->capacity = MIN_STR_CAPACITY;
 	s->data = realloc(s->data, sizeof(char) * s->capacity);
 	s->len = 0;
 }
@@ -570,7 +570,7 @@ void strTrimCset(string *s, const char *cset)
 
 void strTrim(string *s)
 {
-	strTrimCset(s, "\f\n\r\t\v");
+	strTrimCset(s, " \f\n\r\t\v");
 }
 
 int strScanf(const strSlice s, const char *fmt, ...)

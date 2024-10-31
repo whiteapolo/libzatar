@@ -20,7 +20,7 @@ int priorityQueueGetSize(const priorityQueue *q);
 bool priorityQueueIsEmpty(const priorityQueue *q);
 void priorityQueueFree(priorityQueue *q, void (*freeData)(void *));
 
-void *memdup(const void *mem, const int size);
+void *memdup(const void *mem, const size_t size);
 void swap(void *a, void *b, const size_t size);
 
 #ifdef PRIORITYQUEUE_IMPL
@@ -56,7 +56,7 @@ void heapifyUp(heap *h, int i)
 	if (i == 0)
 		return;
 
-	if (h->cmp(h->vec[i], h->vec[parent(i)]) > 0) {
+	if (h->cmp(h->vec[parent(i)], h->vec[i]) > 0) {
 		swap(&h->vec[i], &h->vec[parent(i)], sizeof(void*));
 		heapifyUp(h, parent(i));
 	}
@@ -69,10 +69,10 @@ void heapifyDown(heap *h, int i)
 
 	int largest = i;
 
-	if (l < h->size && h->cmp(h->vec[l], h->vec[i]) > 0)
+	if (l < h->size && h->cmp(h->vec[i], h->vec[l]) > 0)
 		largest = l;
 
-	if (r < h->size && h->cmp(h->vec[r], h->vec[largest]) > 0)
+	if (r < h->size && h->cmp(h->vec[largest], h->vec[r]) > 0)
 		largest = r;
 
 	if (largest != i) {
@@ -157,14 +157,13 @@ void priorityQueueFree(priorityQueue *q, void (*freeData)(void *))
 
 #ifndef MEMDUP
 #define MEMDUP
-void *memdup(const void *mem, const int size)
+void *memdup(const void *mem, const size_t size)
 {
 	void *newMem = malloc(size);
 	memcpy(newMem, mem, size);
 	return newMem;
 }
 #endif
-
 #ifndef SWAP
 #define SWAP
 void swap(void *a, void *b, const size_t size)
@@ -175,6 +174,5 @@ void swap(void *a, void *b, const size_t size)
 	memcpy(b, tmp, size);
 }
 #endif
-
 #endif
 #endif

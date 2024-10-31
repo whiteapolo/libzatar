@@ -42,7 +42,7 @@ char graphGetData(const graph *g, int id);
 
 void graphPrint(const graph *g);
 
-void *memdup(const void *mem, const int size);
+void *memdup(const void *mem, const size_t size);
 
 #ifdef GRAPH_IMPL
 #include <stdlib.h>
@@ -144,7 +144,7 @@ void graphPrint(const graph *g)
 
 #ifndef MEMDUP
 #define MEMDUP
-void *memdup(const void *mem, const int size)
+void *memdup(const void *mem, const size_t size)
 {
 	void *newMem = malloc(size);
 	memcpy(newMem, mem, size);

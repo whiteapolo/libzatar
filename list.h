@@ -23,7 +23,7 @@ void listPrint(const list *l, void (*printData)(void*));
 const list *listGetLast(const list *l);
 void listReverse(list **lst);
 
-void *memdup(const void *mem, int size);
+void *memdup(const void *mem, const size_t size);
 
 #ifdef LIST_IMPL
 list *newList()
@@ -109,7 +109,7 @@ void listReverse(list **lst)
 
 #ifndef MEMDUP
 #define MEMDUP
-void *memdup(const void *mem, const int size)
+void *memdup(const void *mem, const size_t size)
 {
 	void *newMem = malloc(size);
 	memcpy(newMem, mem, size);
