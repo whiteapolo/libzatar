@@ -34,3 +34,10 @@ int getFmtSizeVa(const char *fmt, va_list ap)
 	va_end(ap1);
 	return size;
 }
+
+void *memdup(const void *mem, const int size)
+{
+	void *newMem = malloc(size);
+	memcpy(newMem, mem, size);
+	return newMem;
+}
