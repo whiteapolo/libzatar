@@ -26,7 +26,7 @@ string newStrFromExisting(const strSlice s);
 string newStrFromArray(char *s[], const size_t len, const char *delim);
 string newStrSlice(const strSlice s, ssize_t start, ssize_t end, const ssize_t step);
 
-void shrinkToFit(string *s);
+void strShrinkToFit(string *s);
 strSlice sliceStr(const char *s, const size_t len);
 strSlice sliceStrRange(const strSlice s, const size_t start, const size_t end);
 strSlice sliceStrC(const char *s);

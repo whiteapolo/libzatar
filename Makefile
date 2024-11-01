@@ -1,7 +1,7 @@
 CC = cc
-CFLAGS = -Wall -Wextra -I.
-SRC = cursor.c graph.c list.c map.c path.c priorityQueue.c queue.c shared.c stack.c str.c
-OBJ = $(patsubst %.c,obj/%.o,$(SRC))
+CFLAGS = -pedantic -Wall -Wextra -Iinclude
+SRC = $(wildcard src/*.c)
+OBJ = $(patsubst src/%.c,obj/%.o,$(SRC))
 LIB_DIR = lib
 LIB = $(LIB_DIR)/libmystb.a
 
@@ -11,19 +11,18 @@ $(LIB): $(OBJ) | $(LIB_DIR)
 	@echo "Creating static library $(LIB)"
 	ar rcs $@ $^
 
-# Rule to compile each source file into the obj folder
-obj/%.o: %.c | obj
+obj/%.o: src/%.c | obj
+	@mkdir -p obj  # Ensure obj directory exists
 	$(CC) $(CFLAGS) -c $< -o $@
-
-# Ensure obj and lib directories exist
-obj:
-	mkdir -p obj
 
 $(LIB_DIR):
 	mkdir -p $(LIB_DIR)
 
-clean:
-	@echo "Cleaning up..."
-	rm -f $(OBJ) $(LIB)
+test: $(LIB)
+	$(CC) $(CFLAGS) -L$(LIB_DIR) tests/main.c -o tests/test -lmystb
+	tests/./test
 
-.PHONY: all clean install uninstall
+clean:
+	rm -f $(OBJ) $(LIB) tests/test
+
+.PHONY: all clean test

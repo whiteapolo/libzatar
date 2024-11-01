@@ -85,7 +85,7 @@ string newStrSlice(const strSlice s, ssize_t start, ssize_t end, const ssize_t s
 	return slice;
 }
 
-void shrinkToFit(string *s)
+void strShrinkToFit(string *s)
 {
 	if (s->capacity > s->len + 1) {
 		s->capacity = s->len + 1;
@@ -116,9 +116,8 @@ strSlice sliceStrC(const char *s)
 
 void strClear(string *s)
 {
-	s->capacity = MIN_STR_CAPACITY;
-	s->data = realloc(s->data, sizeof(char) * s->capacity);
 	s->len = 0;
+	s->data[0] = '\0';
 }
 
 void strPushc(string *s, const char c)
