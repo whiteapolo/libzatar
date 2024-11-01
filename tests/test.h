@@ -4,29 +4,32 @@
 #include <stdbool.h>
 
 const char *testName;
+const char *errMessage;
 
 const char *GREEN = "\033[1;32m";
 const char *RED   = "\033[1;31m";
 const char *RESET = "\033[0m";
 
-void setTestName(const char *name)
-{
-	testName = name;
-}
-
-#define TEST(name) \
-	void name()
+#define TEST(name) void name()
 
 #define RUN_TEST(name) \
-	setTestName(#name); \
-	name(#name)
+	do { \
+		errMessage = NULL; \
+		testName = #name; \
+		name(#name); \
+		if (errMessage != NULL) {\
+			printf("[%sFAILED%s] %s: %s\n", RED, RESET, testName, errMessage); \
+		} else { \
+			printf("[%sPASSED%s] %s\n", GREEN, RESET, testName); \
+		} \
+	} while (0)
 
-void EXPECT(bool condition, const char *msg)
-{
-	if (condition == true)
-		printf("[%sPASSED%s] %s: %s\n", GREEN, RESET, testName, msg);
-	else
-		printf("[%sFAILED%s] %s: %s\n", RED, RESET, testName, msg);
-}
+#define EXPECT(condition, msg) \
+	do { \
+		if ((condition) == false) { \
+			errMessage = msg; \
+			return; \
+		} \
+	} while (0) \
 
 #endif
