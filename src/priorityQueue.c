@@ -91,6 +91,12 @@ bool heapIsEmpty(const heap *h)
 	return heapGetSize(h) == 0;
 }
 
+void heapShrinkToFit(heap *h)
+{
+	h->capacity = h->size;
+	h->vec = realloc(h->vec, sizeof(void*) * h->capacity);
+}
+
 void heapClear(heap *h, void (*freeData)(void *))
 {
 	if (freeData != NULL)
@@ -140,6 +146,11 @@ size_t priorityQueueGetSize(const priorityQueue *q)
 bool priorityQueueIsEmpty(const priorityQueue *q)
 {
 	return heapIsEmpty(q);
+}
+
+void priorityQueueShrinkToFit(priorityQueue *q)
+{
+	heapShrinkToFit(q);
 }
 
 void priorityQueueClear(priorityQueue *q, void (*freeData)(void *))

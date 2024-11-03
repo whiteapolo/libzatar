@@ -95,6 +95,17 @@ TEST(priorityQueueClearTest)
 	EXPECT(priorityQueueIsEmpty(&pq) == true, "should be empty after clear");
 }
 
+TEST(priorityQueueShrinkToFitTest)
+{
+	priorityQueue pq = newPriorityQueueWithCapacity(cmpInt, 20);
+	priorityQueuePush(&pq, DUP(4));
+	priorityQueuePush(&pq, DUP(3));
+	priorityQueuePush(&pq, DUP(2));
+	priorityQueuePush(&pq, DUP(1));
+	priorityQueueShrinkToFit(&pq);
+	EXPECT(pq.capacity == 4, "capacity should be 4");
+}
+
 TEST(priorityQueueTest)
 {
 	RUN_TEST(newPriorityQueueTest);
@@ -104,5 +115,6 @@ TEST(priorityQueueTest)
 	RUN_TEST(priorityQueuePeekTest);
 	RUN_TEST(priorityQueueGetSizeTest);
 	RUN_TEST(priorityQueueIsEmptyTest);
+	RUN_TEST(priorityQueueShrinkToFitTest);
 	RUN_TEST(priorityQueueClearTest);
 }

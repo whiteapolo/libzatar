@@ -20,6 +20,7 @@ void *priorityQueuePop(priorityQueue *q);
 const void *priorityQueuePeek(const priorityQueue *q);
 size_t priorityQueueGetSize(const priorityQueue *q);
 bool priorityQueueIsEmpty(const priorityQueue *q);
+void priorityQueueShrinkToFit(priorityQueue *q);
 void priorityQueueClear(priorityQueue *q, void (*freeData)(void *));
 void priorityQueueFree(priorityQueue *q, void (*freeData)(void *));
 
