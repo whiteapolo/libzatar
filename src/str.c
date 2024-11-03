@@ -458,7 +458,6 @@ int strScanf(const strSlice s, const char *fmt, ...)
 
 void strFree(string *s)
 {
-	assert(s->data != NULL);
 	free(s->data);
 }
 
