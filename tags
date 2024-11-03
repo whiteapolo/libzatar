@@ -4,7 +4,7 @@
 !_TAG_OUTPUT_FILESEP	slash	/slash or backslash/
 !_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
 !_TAG_PATTERN_LENGTH_LIMIT	96	/0 for no limit/
-!_TAG_PROC_CWD	/home/white/projects/mystb/	//
+!_TAG_PROC_CWD	/home/white/projects/zatar/	//
 !_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
 !_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
 !_TAG_PROGRAM_URL	https://ctags.io/	/official site/
@@ -56,6 +56,7 @@ LIB	Makefile	/^LIB = $(LIB_DIR)\/libmystb.a$/;"	m
 LIB_DIR	Makefile	/^LIB_DIR = lib$/;"	m
 LLL_H	include/list.h	/^#define LLL_H$/;"	d
 MAP_H	include/map.h	/^#define MAP_H$/;"	d
+MIN_PRIORITY_QUEUE_CAPACITY	include/priorityQueue.h	/^#define MIN_PRIORITY_QUEUE_CAPACITY /;"	d
 MIN_STACK_CAPACITY	include/stack.h	/^#define MIN_STACK_CAPACITY /;"	d
 MIN_STR_CAPACITY	include/str.h	/^#define MIN_STR_CAPACITY /;"	d
 OBJ	Makefile	/^OBJ = $(patsubst src\/%.c,obj\/%.o,$(SRC))$/;"	m
@@ -78,12 +79,14 @@ STACK_H	include/stack.h	/^#define STACK_H$/;"	d
 STR_H	include/str.h	/^#define STR_H$/;"	d
 Scanner	include/str.h	/^} Scanner;$/;"	t	typeref:struct:__anona62d71070208
 TEST	tests/priorityQueueTest.h	/^TEST(newPriorityQueueTest)$/;"	f
+TEST	tests/priorityQueueTest.h	/^TEST(newPriorityQueueWithCapacityTest)$/;"	f
 TEST	tests/priorityQueueTest.h	/^TEST(priorityQueueClearTest)$/;"	f
 TEST	tests/priorityQueueTest.h	/^TEST(priorityQueueGetSizeTest)$/;"	f
 TEST	tests/priorityQueueTest.h	/^TEST(priorityQueueIsEmptyTest)$/;"	f
 TEST	tests/priorityQueueTest.h	/^TEST(priorityQueuePeekTest)$/;"	f
 TEST	tests/priorityQueueTest.h	/^TEST(priorityQueuePopTest)$/;"	f
 TEST	tests/priorityQueueTest.h	/^TEST(priorityQueuePushTest)$/;"	f
+TEST	tests/priorityQueueTest.h	/^TEST(priorityQueueShrinkToFitTest)$/;"	f
 TEST	tests/priorityQueueTest.h	/^TEST(priorityQueueTest)$/;"	f
 TEST	tests/queueTest.h	/^TEST(dequeueTest)$/;"	f
 TEST	tests/queueTest.h	/^TEST(enqueueTest)$/;"	f
@@ -129,7 +132,7 @@ avlNode	include/map.h	/^} avlNode;$/;"	t	typeref:struct:avlNode
 avlOrderTraverse	src/map.c	/^void avlOrderTraverse(const avlNode *root, void (*action)(const void *key, const void *data, voi/;"	f	typeref:typename:void
 avlRemove	src/map.c	/^void avlRemove(avlNode **root, const void *key, int (*cmpKeys)(const void *,const void *), void /;"	f	typeref:typename:void
 avlUpdate	src/map.c	/^void avlUpdate(avlNode *root, const void *key, int (*cmpKeys)(const void *,const void *), void (/;"	f	typeref:typename:void
-capacity	include/priorityQueue.h	/^	int capacity;$/;"	m	struct:__anon9c0809150108	typeref:typename:int
+capacity	include/priorityQueue.h	/^	size_t capacity;$/;"	m	struct:__anon9c0809150108	typeref:typename:size_t
 capacity	include/stack.h	/^	size_t capacity;$/;"	m	struct:__anone63751640108	typeref:typename:size_t
 capacity	include/str.h	/^	size_t capacity;$/;"	m	struct:__anona62d71070108	typeref:typename:size_t
 charToInt	src/str.c	/^int charToInt(const char c)$/;"	f	typeref:typename:int
@@ -198,14 +201,16 @@ graphPrint	src/graph.c	/^void graphPrint(const graph *g)$/;"	f	typeref:typename:
 graphRemoveDoubleEdge	src/graph.c	/^void graphRemoveDoubleEdge(graph *g, int id1, int id2)$/;"	f	typeref:typename:void
 graphRemoveEdge	src/graph.c	/^void graphRemoveEdge(graph *g, int id1, int id2)$/;"	f	typeref:typename:void
 heap	include/priorityQueue.h	/^} heap;$/;"	t	typeref:struct:__anon9c0809150108
+heapClear	src/priorityQueue.c	/^void heapClear(heap *h, void (*freeData)(void *))$/;"	f	typeref:typename:void
 heapFree	src/priorityQueue.c	/^void heapFree(heap *h, void (*freeData)(void *))$/;"	f	typeref:typename:void
-heapGetSize	src/priorityQueue.c	/^int heapGetSize(const heap *h)$/;"	f	typeref:typename:int
+heapGetSize	src/priorityQueue.c	/^size_t heapGetSize(const heap *h)$/;"	f	typeref:typename:size_t
 heapIsEmpty	src/priorityQueue.c	/^bool heapIsEmpty(const heap *h)$/;"	f	typeref:typename:bool
 heapPeek	src/priorityQueue.c	/^const void *heapPeek(const heap *h)$/;"	f	typeref:typename:const void *
 heapPop	src/priorityQueue.c	/^void *heapPop(heap *h)$/;"	f	typeref:typename:void *
 heapPush	src/priorityQueue.c	/^void heapPush(heap *h, void *data)$/;"	f	typeref:typename:void
-heapifyDown	src/priorityQueue.c	/^void heapifyDown(heap *h, int i)$/;"	f	typeref:typename:void
-heapifyUp	src/priorityQueue.c	/^void heapifyUp(heap *h, int i)$/;"	f	typeref:typename:void
+heapShrinkToFit	src/priorityQueue.c	/^void heapShrinkToFit(heap *h)$/;"	f	typeref:typename:void
+heapifyDown	src/priorityQueue.c	/^void heapifyDown(heap *h, size_t i)$/;"	f	typeref:typename:void
+heapifyUp	src/priorityQueue.c	/^void heapifyUp(heap *h, size_t i)$/;"	f	typeref:typename:void
 height	include/map.h	/^	int height;$/;"	m	struct:avlNode	typeref:typename:int
 hideCursor	src/cursor.c	/^void hideCursor()$/;"	f	typeref:typename:void
 id	include/graph.h	/^	int id;$/;"	m	struct:__anon45d93b400108	typeref:typename:int
@@ -217,7 +222,7 @@ isPathExists	src/path.c	/^bool isPathExists(const char *path)$/;"	f	typeref:type
 isRegularFile	src/path.c	/^bool isRegularFile(const char *path)$/;"	f	typeref:typename:bool
 key	include/map.h	/^	void *key;$/;"	m	struct:avlNode	typeref:typename:void *
 left	include/map.h	/^	struct avlNode *left;$/;"	m	struct:avlNode	typeref:struct:avlNode *
-left	src/priorityQueue.c	/^int left(int i)$/;"	f	typeref:typename:int
+left	src/priorityQueue.c	/^size_t left(size_t i)$/;"	f	typeref:typename:size_t
 leftRightRotate	src/map.c	/^void leftRightRotate(avlNode **root)$/;"	f	typeref:typename:void
 leftRotate	src/map.c	/^void leftRotate(avlNode **root)$/;"	f	typeref:typename:void
 len	include/stack.h	/^	size_t len;$/;"	m	struct:__anone63751640108	typeref:typename:size_t
@@ -248,11 +253,12 @@ mapOrderTraverse	src/map.c	/^void mapOrderTraverse(const map *m, void (*action)(
 mapRemove	src/map.c	/^void mapRemove(map *m, const void *key, void (*freeKey)(void *), void (*freeData)(void *))$/;"	f	typeref:typename:void
 mapUpdate	src/map.c	/^void mapUpdate(map m, const void *key, void (*freeData)(void *), void *newData)$/;"	f	typeref:typename:void
 memdup	src/shared.c	/^void *memdup(const void *mem, const int size)$/;"	f	typeref:typename:void *
-newHeap	src/priorityQueue.c	/^heap newHeap(int (*cmp)(const void *, const void *))$/;"	f	typeref:typename:heap
+newHeap	src/priorityQueue.c	/^heap newHeap(int (*cmp)(const void *, const void *), const size_t initializeCapacity)$/;"	f	typeref:typename:heap
 newList	src/list.c	/^list *newList()$/;"	f	typeref:typename:list *
 newMap	src/map.c	/^map newMap(int (*cmpKeys)(const void *, const void *))$/;"	f	typeref:typename:map
 newMapFrom	src/map.c	/^map newMapFrom(int (*cmpKeys)(const void *, const void *), void *key, void *data, ...)$/;"	f	typeref:typename:map
 newPriorityQueue	src/priorityQueue.c	/^priorityQueue newPriorityQueue(int (*cmp)(const void *, const void *))$/;"	f	typeref:typename:priorityQueue
+newPriorityQueueWithCapacity	src/priorityQueue.c	/^priorityQueue newPriorityQueueWithCapacity(int (*cmp)(const void *, const void *), const size_t /;"	f	typeref:typename:priorityQueue
 newQueue	src/queue.c	/^queue newQueue()$/;"	f	typeref:typename:queue
 newScanner	src/str.c	/^Scanner newScanner(FILE *fp)$/;"	f	typeref:typename:Scanner
 newStack	src/stack.c	/^stack newStack()$/;"	f	typeref:typename:stack
@@ -267,16 +273,17 @@ next	include/list.h	/^	struct list *next;$/;"	m	struct:list	typeref:struct:list 
 nextInDir	src/path.c	/^Result nextInDir(DIR *dir, const char *dirName, char *destFileName, const int destLen)$/;"	f	typeref:typename:Result
 obj/%.o	Makefile	/^obj\/%.o: src\/%.c | obj$/;"	t
 originalTermios	src/cursor.c	/^static struct termios originalTermios;$/;"	v	typeref:struct:termios	file:
-parent	src/priorityQueue.c	/^int parent(int i)$/;"	f	typeref:typename:int
+parent	src/priorityQueue.c	/^size_t parent(size_t i)$/;"	f	typeref:typename:size_t
 popen2	src/path.c	/^Result popen2(char *path, char *argv[], FILE *ppipe[2])$/;"	f	typeref:typename:Result
 priorityQueue	include/priorityQueue.h	/^typedef heap priorityQueue;$/;"	t	typeref:typename:heap
 priorityQueueClear	src/priorityQueue.c	/^void priorityQueueClear(priorityQueue *q, void (*freeData)(void *))$/;"	f	typeref:typename:void
 priorityQueueFree	src/priorityQueue.c	/^void priorityQueueFree(priorityQueue *q, void (*freeData)(void *))$/;"	f	typeref:typename:void
-priorityQueueGetSize	src/priorityQueue.c	/^int priorityQueueGetSize(const priorityQueue *q)$/;"	f	typeref:typename:int
+priorityQueueGetSize	src/priorityQueue.c	/^size_t priorityQueueGetSize(const priorityQueue *q)$/;"	f	typeref:typename:size_t
 priorityQueueIsEmpty	src/priorityQueue.c	/^bool priorityQueueIsEmpty(const priorityQueue *q)$/;"	f	typeref:typename:bool
 priorityQueuePeek	src/priorityQueue.c	/^const void *priorityQueuePeek(const priorityQueue *q)$/;"	f	typeref:typename:const void *
 priorityQueuePop	src/priorityQueue.c	/^void *priorityQueuePop(priorityQueue *q)$/;"	f	typeref:typename:void *
 priorityQueuePush	src/priorityQueue.c	/^void priorityQueuePush(priorityQueue *q, void *data)$/;"	f	typeref:typename:void
+priorityQueueShrinkToFit	src/priorityQueue.c	/^void priorityQueueShrinkToFit(priorityQueue *q)$/;"	f	typeref:typename:void
 queue	include/queue.h	/^} queue;$/;"	t	typeref:struct:__anon4eea27d30108
 queueClear	src/queue.c	/^void queueClear(queue *q, void (*freeData)(void *))$/;"	f	typeref:typename:void
 queueFree	src/queue.c	/^void queueFree(queue *q, void (*freeData)(void *))$/;"	f	typeref:typename:void
@@ -290,7 +297,7 @@ redirectFd	src/path.c	/^Result redirectFd(int srcFd, const char *destFileName)$/
 registerChangeInWindowSize	src/cursor.c	/^Result registerChangeInWindowSize(void (*funciton)(int))$/;"	f	typeref:typename:Result
 restoreCursorPos	src/cursor.c	/^void restoreCursorPos()$/;"	f	typeref:typename:void
 right	include/map.h	/^	struct avlNode *right;$/;"	m	struct:avlNode	typeref:struct:avlNode *
-right	src/priorityQueue.c	/^int right(int i)$/;"	f	typeref:typename:int
+right	src/priorityQueue.c	/^size_t right(size_t i)$/;"	f	typeref:typename:size_t
 rightLeftRotate	src/map.c	/^void rightLeftRotate(avlNode **root)$/;"	f	typeref:typename:void
 rightRotate	src/map.c	/^void rightRotate(avlNode **root)$/;"	f	typeref:typename:void
 root	include/map.h	/^	avlNode *root;$/;"	m	struct:__anona5b66a4c0108	typeref:typename:avlNode *
@@ -302,7 +309,7 @@ setCursorStyle	src/cursor.c	/^void setCursorStyle(CURSOR_STYLE style)$/;"	f	type
 setCursorX	src/cursor.c	/^void setCursorX(int x)$/;"	f	typeref:typename:void
 showCursor	src/cursor.c	/^void showCursor()$/;"	f	typeref:typename:void
 size	include/graph.h	/^	int size;$/;"	m	struct:__anon45d93b400208	typeref:typename:int
-size	include/priorityQueue.h	/^	int size;$/;"	m	struct:__anon9c0809150108	typeref:typename:int
+size	include/priorityQueue.h	/^	size_t size;$/;"	m	struct:__anon9c0809150108	typeref:typename:size_t
 sliceStr	src/str.c	/^strSlice sliceStr(const char *s, const size_t len)$/;"	f	typeref:typename:strSlice
 sliceStrC	src/str.c	/^strSlice sliceStrC(const char *s)$/;"	f	typeref:typename:strSlice
 sliceStrRange	src/str.c	/^strSlice sliceStrRange(const strSlice s, const size_t start, const size_t end)$/;"	f	typeref:typename:strSlice

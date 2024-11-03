@@ -3,7 +3,7 @@ CFLAGS = -pedantic -Wall -Wextra -Iinclude
 SRC = $(wildcard src/*.c)
 OBJ = $(patsubst src/%.c,obj/%.o,$(SRC))
 LIB_DIR = lib
-LIB = $(LIB_DIR)/libmystb.a
+LIB = $(LIB_DIR)/libzatar.a
 
 all: $(LIB)
 
