@@ -4,7 +4,7 @@
 !_TAG_OUTPUT_FILESEP	slash	/slash or backslash/
 !_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
 !_TAG_PATTERN_LENGTH_LIMIT	96	/0 for no limit/
-!_TAG_PROC_CWD	/home/white/projects/zatar/	//
+!_TAG_PROC_CWD	/home/white/projects/libzatar/	//
 !_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
 !_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
 !_TAG_PROGRAM_URL	https://ctags.io/	/official site/
@@ -52,10 +52,13 @@ Err	include/shared.h	/^typedef enum { Ok = 0, Err = -1, } Result;$/;"	e	enum:__a
 GRAPH_H	include/graph.h	/^#define GRAPH_H$/;"	d
 GREEN	tests/test.h	/^const char *GREEN = "\\033[1;32m";$/;"	v	typeref:typename:const char *
 HOME	include/cursor.h	/^	HOME = 1005,$/;"	e	enum:__anon5ecaf30c0103
-LIB	Makefile	/^LIB = $(LIB_DIR)\/libmystb.a$/;"	m
+LIB	Makefile	/^LIB = $(LIB_DIR)\/libzatar.a$/;"	m
 LIB_DIR	Makefile	/^LIB_DIR = lib$/;"	m
 LLL_H	include/list.h	/^#define LLL_H$/;"	d
 MAP_H	include/map.h	/^#define MAP_H$/;"	d
+MAX	include/shared.h	/^#define MAX(/;"	d
+MIN	include/shared.h	/^#define MIN(/;"	d
+MIN3	include/shared.h	/^#define MIN3(/;"	d
 MIN_PRIORITY_QUEUE_CAPACITY	include/priorityQueue.h	/^#define MIN_PRIORITY_QUEUE_CAPACITY /;"	d
 MIN_STACK_CAPACITY	include/stack.h	/^#define MIN_STACK_CAPACITY /;"	d
 MIN_STR_CAPACITY	include/str.h	/^#define MIN_STR_CAPACITY /;"	d
@@ -215,7 +218,6 @@ height	include/map.h	/^	int height;$/;"	m	struct:avlNode	typeref:typename:int
 hideCursor	src/cursor.c	/^void hideCursor()$/;"	f	typeref:typename:void
 id	include/graph.h	/^	int id;$/;"	m	struct:__anon45d93b400108	typeref:typename:int
 idCounter	src/graph.c	/^static int idCounter = 0;$/;"	v	typeref:typename:int	file:
-input	src/str.c	/^string input(const char *prompt)$/;"	f	typeref:typename:string
 isDir	src/path.c	/^bool isDir(const char *path)$/;"	f	typeref:typename:bool
 isExtentionEqual	src/path.c	/^bool isExtentionEqual(const char *path, const char *extention)$/;"	f	typeref:typename:bool
 isPathExists	src/path.c	/^bool isPathExists(const char *path)$/;"	f	typeref:typename:bool
@@ -337,13 +339,12 @@ strExtractBetween	src/str.c	/^strSlice strExtractBetween(const strSlice s, const
 strExtractBetweenC	src/str.c	/^strSlice strExtractBetweenC(const strSlice s, const char *left, const char *right)$/;"	f	typeref:typename:strSlice
 strForEachTok	src/str.c	/^void strForEachTok(const strSlice s, const char *delim, void (*action)(const strSlice))$/;"	f	typeref:typename:void
 strFree	src/str.c	/^void strFree(string *s)$/;"	f	typeref:typename:void
+strGetLine	src/str.c	/^string strGetLine(FILE *fp)$/;"	f	typeref:typename:string
+strInput	src/str.c	/^string strInput(const char *prompt)$/;"	f	typeref:typename:string
 strIsEmpty	src/str.c	/^bool strIsEmpty(const strSlice s)$/;"	f	typeref:typename:bool
 strIsEqual	src/str.c	/^bool strIsEqual(const strSlice s1, const strSlice s2)$/;"	f	typeref:typename:bool
 strIsEqualC	src/str.c	/^bool strIsEqualC(const strSlice s1, const char *s2)$/;"	f	typeref:typename:bool
 strIsNumeric	src/str.c	/^bool strIsNumeric(const strSlice s)$/;"	f	typeref:typename:bool
-strMax	src/str.c	/^int strMax(int a, int b)$/;"	f	typeref:typename:int
-strMin	src/str.c	/^int strMin(int a, int b)$/;"	f	typeref:typename:int
-strMin3	src/str.c	/^int strMin3(int a, int b, int c)$/;"	f	typeref:typename:int
 strPopc	src/str.c	/^char strPopc(string *s)$/;"	f	typeref:typename:char
 strPrint	src/str.c	/^void strPrint(const strSlice s)$/;"	f	typeref:typename:void
 strPrintln	src/str.c	/^void strPrintln(const strSlice s)$/;"	f	typeref:typename:void
