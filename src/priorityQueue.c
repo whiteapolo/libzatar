@@ -2,31 +2,32 @@
 #include <limits.h>
 #include "priorityQueue.h"
 
-heap newHeap(int (*cmp)(const void *, const void *))
+heap newHeap(int (*cmp)(const void *, const void *), const size_t initializeCapacity)
 {
 	heap h;
 	h.size = 0;
-	h.vec = NULL;
+	h.capacity = initializeCapacity;
+	h.vec = malloc(sizeof(void*) * h.capacity);
 	h.cmp = cmp;
 	return h;
 }
 
-int parent(int i)
+size_t parent(size_t i)
 {
 	return i / 2;
 }
 
-int right(int i)
+size_t right(size_t i)
 {
 	return (i * 2) + 2;
 }
 
-int left(int i)
+size_t left(size_t i)
 {
 	return (i * 2) + 1;
 }
 
-void heapifyUp(heap *h, int i)
+void heapifyUp(heap *h, size_t i)
 {
 	if (i == 0)
 		return;
@@ -37,12 +38,12 @@ void heapifyUp(heap *h, int i)
 	}
 }
 
-void heapifyDown(heap *h, int i)
+void heapifyDown(heap *h, size_t i)
 {
-	int l = left(i);
-	int r = right(i);
+	size_t l = left(i);
+	size_t r = right(i);
 
-	int largest = i;
+	size_t largest = i;
 
 	if (l < h->size && h->cmp(h->vec[i], h->vec[l]) > 0)
 		largest = l;
@@ -58,7 +59,11 @@ void heapifyDown(heap *h, int i)
 
 void heapPush(heap *h, void *data)
 {
-	h->vec = realloc(h->vec, sizeof(void*) * ++h->size);
+	h->size++;
+	if (h->size > h->capacity) {
+		h->capacity *= 2;
+		h->vec = realloc(h->vec, sizeof(void*) * h->capacity);
+	}
 	h->vec[h->size - 1] = data;
 	heapifyUp(h, h->size - 1);
 }
@@ -71,13 +76,12 @@ const void *heapPeek(const heap *h)
 void *heapPop(heap *h)
 {
 	void *ret = h->vec[0];
-	h->vec[0] = h->vec[h->size - 1];
-	h->vec = realloc(h->vec, sizeof(void*) * --h->size);
+	h->vec[0] = h->vec[--h->size];
 	heapifyDown(h, 0);
 	return ret;
 }
 
-int heapGetSize(const heap *h)
+size_t heapGetSize(const heap *h)
 {
 	return h->size;
 }
@@ -87,17 +91,30 @@ bool heapIsEmpty(const heap *h)
 	return heapGetSize(h) == 0;
 }
 
+void heapClear(heap *h, void (*freeData)(void *))
+{
+	if (freeData != NULL)
+		for (size_t i = 0; i < h->size; i++)
+			freeData(h->vec[i]);
+	h->size = 0;
+}
+
 void heapFree(heap *h, void (*freeData)(void *))
 {
 	if (freeData != NULL)
-		for (int i = 0; i < h->size; i++)
+		for (size_t i = 0; i < h->size; i++)
 			freeData(h->vec[i]);
 	free(h->vec);
 }
 
+priorityQueue newPriorityQueueWithCapacity(int (*cmp)(const void *, const void *), const size_t initializeCapacity)
+{
+	return newHeap(cmp, initializeCapacity);
+}
+
 priorityQueue newPriorityQueue(int (*cmp)(const void *, const void *))
 {
-	return newHeap(cmp);
+	return newHeap(cmp, MIN_PRIORITY_QUEUE_CAPACITY);
 }
 
 void priorityQueuePush(priorityQueue *q, void *data)
@@ -115,7 +132,7 @@ const void *priorityQueuePeek(const priorityQueue *q)
 	return heapPeek(q);
 }
 
-int priorityQueueGetSize(const priorityQueue *q)
+size_t priorityQueueGetSize(const priorityQueue *q)
 {
 	return heapGetSize(q);
 }
@@ -127,7 +144,7 @@ bool priorityQueueIsEmpty(const priorityQueue *q)
 
 void priorityQueueClear(priorityQueue *q, void (*freeData)(void *))
 {
-
+	heapClear(q, freeData);
 }
 
 void priorityQueueFree(priorityQueue *q, void (*freeData)(void *))

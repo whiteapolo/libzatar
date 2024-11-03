@@ -12,6 +12,12 @@ TEST(newPriorityQueueTest)
 	EXPECT(pq.size == 0, "size should be 0");
 }
 
+TEST(newPriorityQueueWithCapacityTest)
+{
+	priorityQueue pq = newPriorityQueueWithCapacity(cmpInt, 20);
+	EXPECT(pq.capacity == 20, "size should be 0");
+}
+
 TEST(priorityQueuePushTest)
 {
 	priorityQueue pq = newPriorityQueue(cmpInt);
@@ -92,6 +98,7 @@ TEST(priorityQueueClearTest)
 TEST(priorityQueueTest)
 {
 	RUN_TEST(newPriorityQueueTest);
+	RUN_TEST(newPriorityQueueWithCapacityTest);
 	RUN_TEST(priorityQueuePushTest);
 	RUN_TEST(priorityQueuePopTest);
 	RUN_TEST(priorityQueuePeekTest);
