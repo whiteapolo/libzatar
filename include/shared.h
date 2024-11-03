@@ -6,6 +6,10 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) > (b) ? (b) : (a))
+#define MIN3(a, b, c) MIN(a, MIN(b, c))
+
 #define ADDRESS(element) (&((typeof(element)){element}))
 #define DUP(value) memdup(ADDRESS(value), sizeof(value))
 
