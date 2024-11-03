@@ -125,6 +125,11 @@ bool priorityQueueIsEmpty(const priorityQueue *q)
 	return heapIsEmpty(q);
 }
 
+void priorityQueueClear(priorityQueue *q, void (*freeData)(void *))
+{
+
+}
+
 void priorityQueueFree(priorityQueue *q, void (*freeData)(void *))
 {
 	heapFree(q, freeData);

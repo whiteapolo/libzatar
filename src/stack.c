@@ -50,6 +50,11 @@ void stackShrinkToFit(stack *s)
 	s->data = realloc(s->data, sizeof(void*) * s->capacity);
 }
 
+void stackClear(stack *s)
+{
+	s->len = 0;
+}
+
 void stackFree(stack *s, void (*freeData)(void *))
 {
 	if (freeData != NULL)

@@ -1,3 +1,6 @@
+#include "stack.h"
+#include "test.h"
+
 TEST(newStackTest)
 {
 	stack s = newStack();
@@ -24,8 +27,9 @@ TEST(stackPopTest)
 	stackPush(&s, DUP(1));
 	stackPush(&s, DUP(6));
 	stackPush(&s, DUP(2));
-	const int *x = stackPop(&s);
-	EXPECT(*x == 2, "poped item should be 2");
+	EXPECT(*(int*)stackPop(&s) == 2, "poped item should be 2");
+	EXPECT(*(int*)stackPop(&s) == 6, "poped item should be 6");
+	EXPECT(*(int*)stackPop(&s) == 1, "poped item should be 1");
 }
 
 TEST(stackTopTest)
@@ -74,6 +78,17 @@ TEST(stackShrinkToFitTest)
 	EXPECT(s.capacity == 3, "capacity should be 0");
 }
 
+TEST(stackClearTest)
+{
+	stack s = newStack();
+	stackPush(&s, DUP(5));
+	stackPush(&s, DUP(5));
+	stackPush(&s, DUP(5));
+	stackPush(&s, DUP(5));
+	stackClear(&s);
+	EXPECT(s.len ==  0, "stack len after clear should be 0");
+}
+
 TEST(stackTest)
 {
 	RUN_TEST(newStackTest);
@@ -84,4 +99,5 @@ TEST(stackTest)
 	RUN_TEST(stackGetSizeTest);
 	RUN_TEST(stackIsEmptyTest);
 	RUN_TEST(stackShrinkToFitTest);
+	RUN_TEST(stackClearTest);
 }

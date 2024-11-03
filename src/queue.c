@@ -38,6 +38,12 @@ void queuePrint(const queue *q, void (*printData)(void *))
 	listPrint(q->start, printData);
 }
 
+void queueClear(queue *q, void (*freeData)(void *))
+{
+	queueFree(q, freeData);
+	*q = newQueue();
+}
+
 void queueFree(queue *q, void (*freeData)(void *))
 {
 	if (freeData)

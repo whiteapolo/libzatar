@@ -14,14 +14,17 @@ const char *RESET = "\033[0m";
 
 #define RUN_TEST(name) \
 	do { \
+		const char *tmp = testName; \
 		errMessage = NULL; \
 		testName = #name; \
-		name(#name); \
+		name(); \
 		if (errMessage != NULL) {\
 			printf("[%sFAILED%s] %s: %s\n", RED, RESET, testName, errMessage); \
 		} else { \
 			printf("[%sPASSED%s] %s\n", GREEN, RESET, testName); \
 		} \
+		testName = tmp; \
+		errMessage = NULL; \
 	} while (0)
 
 #define EXPECT(condition, msg) \

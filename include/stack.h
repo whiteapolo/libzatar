@@ -18,6 +18,7 @@ void *stackTop(const stack *s);
 size_t stackGetSize(const stack *s);
 bool stackIsEmpty(const stack *s);
 void stackShrinkToFit(stack *s);
+void stackClear(stack *s);
 void stackFree(stack *s, void (*freeData)(void *));
 
 #endif

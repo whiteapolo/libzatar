@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "test.h"
-#include "stack.h"
 #include "graph.h"
 #include "str.h"
 #include "path.h"
@@ -13,17 +12,13 @@
 #include "priorityQueue.h"
 
 #include "stackTest.h"
-
-#define ARRAY_SIZE(arr) ((int)(sizeof(arr)/sizeof(arr[0])))
-
-int cmpInt(const void *a, const void *b)
-{
-	return *(const int*)a - *(const int*)b;
-}
-
+#include "queueTest.h"
+#include "priorityQueueTest.h"
 
 int main()
 {
 	RUN_TEST(stackTest);
+	RUN_TEST(queueTest);
+	RUN_TEST(priorityQueueTest);
 	return 0;
 }
