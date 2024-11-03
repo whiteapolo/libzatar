@@ -19,7 +19,7 @@ $(LIB_DIR):
 	mkdir -p $(LIB_DIR)
 
 test: $(LIB)
-	$(CC) $(CFLAGS) -L$(LIB_DIR) tests/main.c -o tests/test -lmystb
+	$(CC) $(CFLAGS) -L$(LIB_DIR) tests/main.c -o tests/test lib/libzatar.a
 	tests/./test
 
 clean:

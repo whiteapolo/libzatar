@@ -476,14 +476,21 @@ void strDebugPrint(const strSlice s)
 	printf("len: %zu\ncapacity: %zu\ndata: %.*s\n", s.len, s.capacity, (int)s.len, s.data);
 }
 
-string input(const char *prompt)
+string strGetLine(FILE *fp)
 {
-	string s = newStr("");
-	printf("%s", prompt);
-	char c;
-	while ((c = fgetc(stdin)) != '\n')
-		strPushc(&s, c);
+	string s;
+	s.data = NULL;
+	s.capacity = 0;
+	s.len = getline(&s.data, &s.capacity, fp);
+	if (s.len > 0 && s.data[s.len - 1] == '\n')
+		s.data[--s.len] = '\0';
 	return s;
+}
+
+string strInput(const char *prompt)
+{
+	printf("%s", prompt);
+	return strGetLine(stdin);
 }
 
 string readWholeFile(const char *fileName)

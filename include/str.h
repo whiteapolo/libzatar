@@ -84,7 +84,8 @@ void strPrint(const strSlice s);
 void strPrintln(const strSlice s);
 void strDebugPrint(const strSlice s);
 
-string input(const char *prompt);
+string strGetLine(FILE *fp);
+string strInput(const char *prompt);
 string readWholeFile(const char *fileName);
 
 Scanner newScanner(FILE *fp);
