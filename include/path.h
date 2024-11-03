@@ -3,6 +3,7 @@
 #include "shared.h"
 #include <dirent.h>
 #include <errno.h>
+#include <sys/types.h>
 
 typedef enum { Read = 0, Write = 1, } PipeMode;
 
