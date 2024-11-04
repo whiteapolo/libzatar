@@ -47,7 +47,9 @@ avlNode *avlGetMax(avlNode *root)
 void leftRotate(avlNode **root)
 {
 	avlNode *newRoot = (*root)->right;
-	avlNode *tmp = newRoot->left;
+	avlNode *tmp = NULL;
+	if (newRoot != NULL)
+		tmp = newRoot->left;
 
 	newRoot->left = *root;
 	(*root)->right = tmp;
@@ -62,6 +64,10 @@ void rightRotate(avlNode **root)
 {
 	avlNode *newRoot = (*root)->left;
 	avlNode *tmp = newRoot->right;
+
+	// avlNode *tmp = NULL;
+	// if (newRoot != NULL)
+	// 	tmp = newRoot->left;
 
 	newRoot->right = *root;
 	(*root)->left = tmp;
