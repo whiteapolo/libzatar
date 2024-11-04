@@ -6,14 +6,15 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) > (b) ? (b) : (a))
-#define MIN3(a, b, c) MIN(a, MIN(b, c))
-
 #define ADDRESS(element) (&((typeof(element)){element}))
 #define DUP(value) memdup(ADDRESS(value), sizeof(value))
 
 typedef enum { Ok = 0, Err = -1, } Result;
+
+int zatarMax(const int a, const int b);
+int zatarMin(const int a, const int b);
+int zatarMin3(const int a, const int b, const int c);
+int zatarMax3(const int a, const int b, const int c);
 
 void swap(void *a, void *b, const size_t size);
 size_t getFileSize(FILE *fp);

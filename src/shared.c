@@ -1,5 +1,25 @@
 #include "shared.h"
 
+int zatarMax(const int a, const int b)
+{
+	return a > b ? a : b;
+}
+
+int zatarMin(const int a, const int b)
+{
+	return a > b ? b : a;
+}
+
+int zatarMin3(const int a, const int b, const int c)
+{
+	return zatarMin(a, zatarMin(b, c));
+}
+
+int zatarMax3(const int a, const int b, const int c)
+{
+	return zatarMax(a, zatarMax(b, c));
+}
+
 void swap(void *a, void *b, const size_t size)
 {
 	char tmp[size];

@@ -1,16 +1,9 @@
 #ifndef MAP_H
 #define MAP_H
 #include "shared.h"
+#include "avlTree.h"
 
 typedef int (*cmpKeysType)(const void *, const void *);
-
-typedef struct avlNode {
-	struct avlNode *left;
-	struct avlNode *right;
-	void *key;
-	void *data;
-	int height;
-} avlNode;
 
 typedef struct {
 	avlNode *root;

@@ -28,7 +28,7 @@ string newStrVa(const size_t minSize, const char *fmt, va_list ap)
 	va_copy(ap1, ap);
 
 	s.len = getFmtSizeVa(fmt, ap1);
-	s.capacity = MAX(s.len * 2, minSize);
+	s.capacity = zatarMax(s.len * 2, minSize);
 	va_end(ap1);
 
 	s.data = malloc(sizeof(char) * s.capacity);
@@ -574,7 +574,7 @@ unsigned int getEditDistance(const strSlice s1, const strSlice s2)
 			if (tolower(s1.data[j-1]) == tolower(s2.data[i-1]))
 				curr = topleft;
 			else
-				curr = 1 + MIN3(topleft, row[j], row[j-1]);
+				curr = 1 + zatarMin3(topleft, row[j], row[j-1]);
 			topleft = row[j];
 			row[j] = curr;
 		}
