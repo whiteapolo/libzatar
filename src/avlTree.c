@@ -48,13 +48,14 @@ void leftRotate(avlNode **root)
 {
 	avlNode *newRoot = (*root)->right;
 	avlNode *tmp = NULL;
-	if (newRoot != NULL)
+	if (newRoot != NULL) {
 		tmp = newRoot->left;
+		newRoot->left = *root;
+		updateHeight(newRoot->left);
+	}
 
-	newRoot->left = *root;
 	(*root)->right = tmp;
 
-	updateHeight(newRoot->left);
 	updateHeight(newRoot);
 
 	*root = newRoot;
