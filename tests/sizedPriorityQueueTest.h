@@ -1,5 +1,7 @@
 #include "sizedPriorityQueue.h"
 #include "test.h"
+#include "avlTree.h"
+#include <stdio.h>
 
 int sizedPriorityQueueTestCmpInt(const void *a, const void *b)
 {
@@ -10,6 +12,13 @@ TEST(newSizedPriorityQueueTest)
 {
 	sizedPriorityQueue pq = newSizedPriorityQueue(20, sizedPriorityQueueTestCmpInt, free);
 	EXPECT(sizedPriorityQueueGetSize(&pq) == 0, "size should be 0");
+}
+
+void print(const void *key, const void *data, void *arg)
+{
+	(void)data;
+	(void)arg;
+	printf("%d\n", *(int*)key);
 }
 
 TEST(sizedPriorityQueuePushTest)

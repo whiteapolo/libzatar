@@ -20,6 +20,7 @@ void avlInsert(avlNode **root, void *key, void *data, int (*cmpKeys)(const void 
 void avlRemove(avlNode **root, const void *key, int (*cmpKeys)(const void *,const void *), void (*freeKey)(void *), void (*freeData)(void *));
 void avlUpdate(avlNode *root, const void *key, int (*cmpKeys)(const void *,const void *), void (*freeData)(void *), void *newData);
 void avlOrderTraverse(const avlNode *root, void (*action)(const void *key, const void *data, void *arg), void *arg);
+void avlPrint(const avlNode *root, void (*print)(const void *key, const void *data, void *arg), void *arg, const int padding);
 void avlFree(avlNode *root, void (*freeKey)(void *), void (*freeData)(void *));
 
 #endif

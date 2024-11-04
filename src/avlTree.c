@@ -206,6 +206,23 @@ void avlOrderTraverse(const avlNode *root, void (*action)(const void *key, const
     avlOrderTraverse(root->right, action, arg);
 }
 
+void printCharNTimes(const char c, const int n)
+{
+	for (int i = 0; i < n; i++)
+		putchar(c);
+}
+
+void avlPrint(const avlNode *root, void (*print)(const void *key, const void *data, void *arg), void *arg, const int padding)
+{
+	if (root == NULL)
+		return;
+
+	printCharNTimes(' ', padding);
+	print(root->key, root->data, arg);
+	avlPrint(root->right, print, arg, padding + 4);
+	avlPrint(root->left, print, arg, padding + 4);
+}
+
 void avlFree(avlNode *root, void (*freeKey)(void *), void (*freeData)(void *))
 {
 	if (root == NULL)
