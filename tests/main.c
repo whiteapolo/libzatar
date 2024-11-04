@@ -14,11 +14,13 @@
 #include "stackTest.h"
 #include "queueTest.h"
 #include "priorityQueueTest.h"
+#include "sizedPriorityQueueTest.h"
 
 int main()
 {
 	RUN_TEST(stackTest);
 	RUN_TEST(queueTest);
 	RUN_TEST(priorityQueueTest);
+	RUN_TEST(sizedPriorityQueueTest);
 	return 0;
 }

@@ -1,26 +1,26 @@
 #include "priorityQueue.h"
 #include "test.h"
 
-int cmpInt(const void *a, const void *b)
+int priorityQueueTestCmpInt(const void *a, const void *b)
 {
 	return *(const int*)a - *(const int*)b;
 }
 
 TEST(newPriorityQueueTest)
 {
-	priorityQueue pq = newPriorityQueue(cmpInt);
+	priorityQueue pq = newPriorityQueue(priorityQueueTestCmpInt);
 	EXPECT(pq.size == 0, "size should be 0");
 }
 
 TEST(newPriorityQueueWithCapacityTest)
 {
-	priorityQueue pq = newPriorityQueueWithCapacity(cmpInt, 20);
+	priorityQueue pq = newPriorityQueueWithCapacity(priorityQueueTestCmpInt, 20);
 	EXPECT(pq.capacity == 20, "size should be 0");
 }
 
 TEST(priorityQueuePushTest)
 {
-	priorityQueue pq = newPriorityQueue(cmpInt);
+	priorityQueue pq = newPriorityQueue(priorityQueueTestCmpInt);
 	priorityQueuePush(&pq, DUP(1));
 	priorityQueuePush(&pq, DUP(4));
 	priorityQueuePush(&pq, DUP(9));
@@ -32,7 +32,7 @@ TEST(priorityQueuePushTest)
 
 TEST(priorityQueuePopTest)
 {
-	priorityQueue pq = newPriorityQueue(cmpInt);
+	priorityQueue pq = newPriorityQueue(priorityQueueTestCmpInt);
 	priorityQueuePush(&pq, DUP(1));
 	priorityQueuePush(&pq, DUP(4));
 	priorityQueuePush(&pq, DUP(9));
@@ -52,7 +52,7 @@ TEST(priorityQueuePopTest)
 
 TEST(priorityQueuePeekTest)
 {
-	priorityQueue pq = newPriorityQueue(cmpInt);
+	priorityQueue pq = newPriorityQueue(priorityQueueTestCmpInt);
 	priorityQueuePush(&pq, DUP(9));
 	priorityQueuePush(&pq, DUP(5));
 	priorityQueuePush(&pq, DUP(7));
@@ -63,7 +63,7 @@ TEST(priorityQueuePeekTest)
 
 TEST(priorityQueueGetSizeTest)
 {
-	priorityQueue pq = newPriorityQueue(cmpInt);
+	priorityQueue pq = newPriorityQueue(priorityQueueTestCmpInt);
 	for (int i = 0; i < 100; i++)
 		priorityQueuePush(&pq, DUP(i));
 	EXPECT(*(int*)priorityQueuePeek(&pq) == 0, "peek should be 0");
@@ -73,7 +73,7 @@ TEST(priorityQueueGetSizeTest)
 
 TEST(priorityQueueIsEmptyTest)
 {
-	priorityQueue pq = newPriorityQueue(cmpInt);
+	priorityQueue pq = newPriorityQueue(priorityQueueTestCmpInt);
 	EXPECT(priorityQueueIsEmpty(&pq) == true, "should be empty at start");
 	priorityQueuePush(&pq, DUP(2));
 	EXPECT(priorityQueueIsEmpty(&pq) == false, "should not be empty");
@@ -88,7 +88,7 @@ TEST(priorityQueueIsEmptyTest)
 
 TEST(priorityQueueClearTest)
 {
-	priorityQueue pq = newPriorityQueue(cmpInt);
+	priorityQueue pq = newPriorityQueue(priorityQueueTestCmpInt);
 	priorityQueuePush(&pq, DUP(1));
 	priorityQueuePush(&pq, DUP(2));
 	priorityQueueClear(&pq, NULL);
@@ -97,7 +97,7 @@ TEST(priorityQueueClearTest)
 
 TEST(priorityQueueShrinkToFitTest)
 {
-	priorityQueue pq = newPriorityQueueWithCapacity(cmpInt, 20);
+	priorityQueue pq = newPriorityQueueWithCapacity(priorityQueueTestCmpInt, 20);
 	priorityQueuePush(&pq, DUP(4));
 	priorityQueuePush(&pq, DUP(3));
 	priorityQueuePush(&pq, DUP(2));

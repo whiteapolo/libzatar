@@ -1,5 +1,5 @@
 CC = cc
-CFLAGS = -pedantic -Wall -Wextra -Iinclude
+CFLAGS = -pedantic -Wall -Wextra -Iinclude -g
 SRC = $(wildcard src/*.c)
 OBJ = $(patsubst src/%.c,obj/%.o,$(SRC))
 LIB_DIR = lib
