@@ -47,15 +47,12 @@ avlNode *avlGetMax(avlNode *root)
 void leftRotate(avlNode **root)
 {
 	avlNode *newRoot = (*root)->right;
-	avlNode *tmp = NULL;
-	if (newRoot != NULL) {
-		tmp = newRoot->left;
-		newRoot->left = *root;
-		updateHeight(newRoot->left);
-	}
+	avlNode *tmp = newRoot->left;
 
+	newRoot->left = *root;
 	(*root)->right = tmp;
 
+	updateHeight(newRoot->left);
 	updateHeight(newRoot);
 
 	*root = newRoot;
@@ -65,10 +62,6 @@ void rightRotate(avlNode **root)
 {
 	avlNode *newRoot = (*root)->left;
 	avlNode *tmp = newRoot->right;
-
-	// avlNode *tmp = NULL;
-	// if (newRoot != NULL)
-	// 	tmp = newRoot->left;
 
 	newRoot->right = *root;
 	(*root)->left = tmp;
@@ -129,15 +122,14 @@ void avlInsert(avlNode **root, void *key, void *data, int (*cmpKeys)(const void 
 
 	updateHeight(*root);
 	const int bf = getBalanceFactor(*root);
-	const int cmpRes = cmpKeys(key, (*root)->key);
 
-	if (bf > 1 && cmpRes < 0)
+	if (bf > 1 && cmpKeys(key, (*root)->left->key) < 0)
 		rightRotate(root);
-	else if (bf < -1 && cmpRes > 0)
+	else if (bf < -1 && cmpKeys(key, (*root)->right->key) > 0)
 		leftRotate(root);
-	else if (bf > 1 && cmpRes > 0)
+	else if (bf > 1 && cmpKeys(key, (*root)->left->key) > 0)
 		leftRightRotate(root);
-	else if (bf < -1 && cmpRes < 0)
+	else if (bf < -1 && cmpKeys(key, (*root)->right->key)< 0)
 		rightLeftRotate(root);
 }
 
