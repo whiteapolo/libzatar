@@ -14,14 +14,12 @@ TEST(newSizedPriorityQueueTest)
 
 TEST(sizedPriorityQueuePushTest)
 {
-	sizedPriorityQueue pq = newSizedPriorityQueue(20, sizedPriorityQueueTestCmpInt, free);
-	sizedPriorityQueuePush(&pq, DUP(1));
-	sizedPriorityQueuePush(&pq, DUP(4));
-	sizedPriorityQueuePush(&pq, DUP(9));
-	sizedPriorityQueuePush(&pq, DUP(8));
-	sizedPriorityQueuePush(&pq, DUP(2));
-	EXPECT(sizedPriorityQueueGetSize(&pq) == 5, "size should be 5");
-	EXPECT(*(int*)sizedPriorityQueuePeek(&pq) == 1, "peek should return 1");
+	sizedPriorityQueue pq = newSizedPriorityQueue(10, sizedPriorityQueueTestCmpInt, free);
+	for (int i = 0; i < 100; i++) {
+		sizedPriorityQueuePush(&pq, DUP(i));
+	}
+	EXPECT(sizedPriorityQueueGetSize(&pq) == 10, "size should be 10");
+	EXPECT(*(int*)sizedPriorityQueuePeek(&pq) == 0, "peek should return 0");
 }
 
 TEST(sizedPriorityQueuePopTest)
