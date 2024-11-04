@@ -6,11 +6,13 @@ queue newQueue()
 	queue q;
 	q.start = NULL;
 	q.end = NULL;
+	q.size = 0;
 	return q;
 }
 
-void enqueue(queue *q, void *data)
+void queuePush(queue *q, void *data)
 {
+	q->size++;
 	if (q->start == NULL) {
 		listPush(&q->start, data);
 		q->end = q->start;
@@ -20,17 +22,28 @@ void enqueue(queue *q, void *data)
 	}
 }
 
-void *dequeue(queue *q)
+void *queuePop(queue *q)
 {
+	q->size--;
 	list *tmp = q->start->next;
 	void *data = listPop(&q->start);
 	q->start = tmp;
 	return data;
 }
 
+void *queuePeek(queue *q)
+{
+	return q->start->data;
+}
+
 bool queueIsEmpty(const queue *q)
 {
 	return q->start == NULL;
+}
+
+size_t queueGetSize(const queue *q)
+{
+	return q->size;
 }
 
 void queuePrint(const queue *q, void (*printData)(void *))
@@ -48,5 +61,5 @@ void queueFree(queue *q, void (*freeData)(void *))
 {
 	if (freeData)
 		while (!queueIsEmpty(q))
-			freeData(dequeue(q));
+			freeData(queuePop(q));
 }
