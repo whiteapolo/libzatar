@@ -195,6 +195,15 @@ int strCmp(const strSlice s1, const strSlice s2)
 	return strncmp(s1.data, s2.data, s1.len);
 }
 
+int strCmpPtr(const strSlice *s1, const strSlice *s2)
+{
+	if (s1->len > s2->len)
+		return 1;
+	if (s1->len < s2->len)
+		return -1;
+	return strncmp(s1->data, s2->data, s1->len);
+}
+
 int strnCmp(const strSlice s1, const strSlice s2, size_t n)
 {
 	return strncmp(s1.data, s2.data, n);
@@ -208,6 +217,11 @@ int strnCmpC(const strSlice s1, const char *s2, const size_t n)
 int strCmpC(const strSlice s1, const char *s2)
 {
 	return strnCmpC(s1, s2, s1.len);
+}
+
+bool strIsEqualPtr(const strSlice *s1, const strSlice *s2)
+{
+	return strCmpPtr(s1, s2) == 0;
 }
 
 bool strIsEqual(const strSlice s1, const strSlice s2)
@@ -554,12 +568,22 @@ size_t strDisplayedLength(const strSlice s)
 	return len;
 }
 
-unsigned int getEditDistanceC(const char *s1, const char *s2)
+int charCmp(const char a, const char b)
 {
-	return getEditDistance(sliceStrC(s1), sliceStrC(s2));
+	return tolower(a) - tolower(b);
 }
 
-unsigned int getEditDistance(const strSlice s1, const strSlice s2)
+int charCaseCmp(const char a, const char b)
+{
+	return a - b;
+}
+
+unsigned int strCalculateEditDistanceC(const char *s1, const char *s2, int (*cmpChar)(const char a, const char b))
+{
+	return strCalculateEditDistance(sliceStrC(s1), sliceStrC(s2), cmpChar);
+}
+
+unsigned int strCalculateEditDistance(const strSlice s1, const strSlice s2, int (*cmpChar)(const char a, const char b))
 {
 	unsigned int row[s1.len + 1];
 
@@ -571,7 +595,7 @@ unsigned int getEditDistance(const strSlice s1, const strSlice s2)
 		unsigned int topleft = i - 1;
 		for (unsigned int j = 1; j <= s1.len; j++) {
 			unsigned int curr;
-			if (tolower(s1.data[j-1]) == tolower(s2.data[i-1]))
+			if (cmpChar(s1.data[j-1], s2.data[i-1]) == 0)
 				curr = topleft;
 			else
 				curr = 1 + zatarMin3(topleft, row[j], row[j-1]);
