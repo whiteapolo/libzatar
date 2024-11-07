@@ -8,6 +8,8 @@ typedef struct {
 	size_t size;
 } queue;
 
+#define EMPTY_QUEUE ((queue){0})
+
 queue newQueue();
 void queuePush(queue *q, void *data);
 void *queuePop(queue *q);
