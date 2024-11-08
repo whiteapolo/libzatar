@@ -1,5 +1,6 @@
 #include <string.h>
 #include "queue.h"
+#include "list.h"
 
 queue newQueue()
 {
@@ -62,4 +63,9 @@ void queueFree(queue *q, void (*freeData)(void *))
 	if (freeData)
 		while (!queueIsEmpty(q))
 			freeData(queuePop(q));
+}
+
+list *queueToList(queue *q)
+{
+	return q->start;
 }

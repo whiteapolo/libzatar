@@ -19,5 +19,6 @@ size_t queueGetSize(const queue *q);
 void queuePrint(const queue *q, void (*printData)(void *));
 void queueClear(queue *q, void (*freeData)(void *));
 void queueFree(queue *q, void (*freeData)(void *));
+list *queueToList(queue *q);
 
 #endif
