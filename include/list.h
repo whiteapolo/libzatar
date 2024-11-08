@@ -12,9 +12,9 @@ void listPush(list **m, void *data);
 void *listPop(list **m);
 void listInsertAfter(list *l, void *data);
 void *listRemoveAfter(list *l);
-void listFree(list **m, void (*freeData)(void *));
+void listFree(list *m, void (*freeData)(void *));
 void listInsertEnd(list *l, void *data);
-void listPrint(const list *l, void (*printData)(void*));
+void listPrint(const list *l, void (*printData)(const void*));
 const list *listGetLast(const list *l);
 void listReverse(list **lst);
 

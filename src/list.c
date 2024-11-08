@@ -39,10 +39,10 @@ void *listRemoveAfter(list *l)
 	return data;
 }
 
-void listFree(list **m, void (*freeData)(void *))
+void listFree(list *m, void (*freeData)(void *))
 {
-	while (*m != NULL) {
-		void *tmp = listPop(m);
+	while (m != NULL) {
+		void *tmp = listPop(&m);
 		if (freeData)
 			freeData(tmp);
 	}
@@ -53,7 +53,7 @@ void listInsertEnd(list *l, void *data)
 	listInsertAfter((list *)listGetLast(l), data);
 }
 
-void listPrint(const list *l, void (*printData)(void*))
+void listPrint(const list *l, void (*printData)(const void *))
 {
 	while (l) {
 		printData(l->data);

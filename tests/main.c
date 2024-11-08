@@ -15,6 +15,7 @@
 #include "queueTest.h"
 #include "priorityQueueTest.h"
 #include "sizedPriorityQueueTest.h"
+#include "circularListTest.h"
 
 int main()
 {
@@ -22,5 +23,6 @@ int main()
 	RUN_TEST(queueTest);
 	RUN_TEST(priorityQueueTest);
 	RUN_TEST(sizedPriorityQueueTest);
+	RUN_TEST(circularListTest);
 	return 0;
 }
