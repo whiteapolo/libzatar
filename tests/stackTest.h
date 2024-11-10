@@ -43,14 +43,14 @@ TEST(stackTopTest)
 	EXPECT(*x == 2, "poped item should be 2");
 }
 
-TEST(stackGetSizeTest)
+TEST(stackSizeTest)
 {
 	stack s = newStack();
-	EXPECT(stackGetSize(&s) == 0, "stack size should be 0");
+	EXPECT(stackSize(&s) == 0, "stack size should be 0");
 	stackPush(&s, DUP(2));
 	stackPush(&s, DUP(2));
 	stackPush(&s, DUP(2));
-	EXPECT(stackGetSize(&s) == 3, "stack size should be 3");
+	EXPECT(stackSize(&s) == 3, "stack size should be 3");
 }
 
 TEST(stackIsEmptyTest)
@@ -96,7 +96,7 @@ TEST(stackTest)
 	RUN_TEST(stackPushTest);
 	RUN_TEST(stackPopTest);
 	RUN_TEST(stackTopTest);
-	RUN_TEST(stackGetSizeTest);
+	RUN_TEST(stackSizeTest);
 	RUN_TEST(stackIsEmptyTest);
 	RUN_TEST(stackShrinkToFitTest);
 	RUN_TEST(stackClearTest);

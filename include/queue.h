@@ -16,7 +16,7 @@ void *queuePop(queue *q);
 void *queuePeek(queue *q);
 bool queueIsEmpty(const queue *q);
 size_t queueGetSize(const queue *q);
-void queuePrint(const queue *q, void (*printData)(void *));
+void queuePrint(const queue *q, void (*printData)(const void *));
 void queueClear(queue *q, void (*freeData)(void *));
 void queueFree(queue *q, void (*freeData)(void *));
 list *queueToList(queue *q);

@@ -47,7 +47,7 @@ size_t queueGetSize(const queue *q)
 	return q->size;
 }
 
-void queuePrint(const queue *q, void (*printData)(void *))
+void queuePrint(const queue *q, void (*printData)(const void *))
 {
 	listPrint(q->start, printData);
 }

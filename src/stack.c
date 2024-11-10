@@ -34,7 +34,7 @@ void *stackTop(const stack *s)
 	return s->data[s->len - 1];
 }
 
-size_t stackGetSize(const stack *s)
+size_t stackSize(const stack *s)
 {
 	return s->len;
 }

@@ -1,15 +1,9 @@
 #ifndef PRIORITYQUEUE_H
 #define PRIORITYQUEUE_H
 #include "shared.h"
+#include "heap.h"
 
 #define MIN_PRIORITY_QUEUE_CAPACITY 16
-
-typedef struct {
-	void **vec;
-	size_t size;
-	size_t capacity;
-	int (*cmp)(const void *, const void *);
-} heap;
 
 typedef heap priorityQueue;
 

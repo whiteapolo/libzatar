@@ -3,3 +3,4 @@ tests/exe
 tests/test
 lib/*
 obj/*
+tags

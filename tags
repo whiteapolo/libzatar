@@ -107,7 +107,7 @@ TEST	tests/sizedPriorityQueueTest.h	/^TEST(sizedPriorityQueueTest)$/;"	f
 TEST	tests/stackTest.h	/^TEST(newStackTest)$/;"	f
 TEST	tests/stackTest.h	/^TEST(newStackWithCapacityTest)$/;"	f
 TEST	tests/stackTest.h	/^TEST(stackClearTest)$/;"	f
-TEST	tests/stackTest.h	/^TEST(stackGetSizeTest)$/;"	f
+TEST	tests/stackTest.h	/^TEST(stackSizeTest)$/;"	f
 TEST	tests/stackTest.h	/^TEST(stackIsEmptyTest)$/;"	f
 TEST	tests/stackTest.h	/^TEST(stackPopTest)$/;"	f
 TEST	tests/stackTest.h	/^TEST(stackPushTest)$/;"	f
@@ -348,7 +348,7 @@ sliceStrRange	src/str.c	/^strSlice sliceStrRange(const strSlice s, const size_t 
 stack	include/stack.h	/^} stack;$/;"	t	typeref:struct:__anone63751640108
 stackClear	src/stack.c	/^void stackClear(stack *s)$/;"	f	typeref:typename:void
 stackFree	src/stack.c	/^void stackFree(stack *s, void (*freeData)(void *))$/;"	f	typeref:typename:void
-stackGetSize	src/stack.c	/^size_t stackGetSize(const stack *s)$/;"	f	typeref:typename:size_t
+stackSize	src/stack.c	/^size_t stackSize(const stack *s)$/;"	f	typeref:typename:size_t
 stackIsEmpty	src/stack.c	/^bool stackIsEmpty(const stack *s)$/;"	f	typeref:typename:bool
 stackPop	src/stack.c	/^void *stackPop(stack *s)$/;"	f	typeref:typename:void *
 stackPush	src/stack.c	/^void stackPush(stack *s, void *data)$/;"	f	typeref:typename:void

@@ -8,14 +8,14 @@ typedef struct {
 	size_t capacity;
 } stack;
 
-#define MIN_STACK_CAPACITY (16)
+#define MIN_STACK_CAPACITY 16
 
 stack newStack();
 stack newStackWithCapacity(const size_t capacity);
 void stackPush(stack *s, void *data);
 void *stackPop(stack *s);
 void *stackTop(const stack *s);
-size_t stackGetSize(const stack *s);
+size_t stackSize(const stack *s);
 bool stackIsEmpty(const stack *s);
 void stackShrinkToFit(stack *s);
 void stackClear(stack *s);
