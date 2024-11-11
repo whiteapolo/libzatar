@@ -12,18 +12,18 @@ typedef struct {
 
 vector newVector();
 vector newVectorWithCapacity(const size_t initialCapacity);
-vector newVectorFrom(const vector *v, void *(*dupData)(const void *));
-vector newVectorFromRange(const vector *v, ssize_t start, ssize_t end, const ssize_t step, void *(*dupData)(const void *));
+vector vectorClone(const vector *v, void *(*dupData)(const void *));
+vector vectorCloneRange(const vector *v, ssize_t start, ssize_t end, const ssize_t step, void *(*dupData)(const void *));
 
-void *vectorAt(const vector *v, const size_t i);
-void vectorPush(vector *v, void *data);
-void *vectorPop(vector *v);
-void vectorPushAt(vector *v, size_t i, void *data);
-void *vectorPopAt(vector *v, size_t i);
-void vectorErase(vector *v, ssize_t start, ssize_t end, const ssize_t step, void (*freeData)(void *));
+const void *vectorAt(const vector *v, const size_t i);
+void vectorAdd(vector *v, void *data);
+void *vectorRemoveLast(vector *v);
+void vectorInsertAt(vector *v, size_t i, void *data);
+void *vectorRemoveAt(vector *v, size_t i);
+void vectorRemoveRange(vector *v, ssize_t start, ssize_t end, const ssize_t step, void (*freeData)(void *));
 
-void vectorPush(vector *dest, const vector *src, void *(*dupData)(const void *));
-void vectorPushAt(vector *dest, const size_t i, const vector *src, void *(*dupData)(const void *));
+void vectorAddVector(vector *dest, const vector *src, void *(*dupData)(const void *));
+void vectorAddVectorAt(vector *dest, const size_t i, const vector *src, void *(*dupData)(const void *));
 void *vectorReplace(vector *v, const size_t i, void *data);
 
 size_t vectorSize(const vector *v);

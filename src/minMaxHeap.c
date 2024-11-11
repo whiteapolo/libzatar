@@ -1,17 +1,18 @@
 #include "minMaxHeap.h"
 #include "shared.h"
+#include <math.h>
 
 size_t right(size_t i);
 size_t left(size_t i);
 size_t nodeLevel(size_t i);
 size_t isMinLevel(size_t i);
 
-void heapifyMaxUp(heap *h, size_t i);
-void heapifyMinUp(heap *h, size_t i);
-void heapifyMaxDown(heap *h, size_t i);
-void heapifyMinDown(heap *h, size_t i);
+void minMaxHeapifyMaxUp(minMaxHeap *h, size_t i);
+void minMaxHeapifyMinUp(minMaxHeap *h, size_t i);
+void minMaxHeapifyMaxDown(minMaxHeap *h, size_t i);
+void minMaxHeapifyMinDown(minMaxHeap *h, size_t i);
 
-minMaxHeap newMinMaxHeapWithCapacity(int (*cmp)(const void *, const void *), const size_t initialCapacity)
+minMaxHeap newMinMaxminMaxHeapWithCapacity(int (*cmp)(const void *, const void *), const size_t initialCapacity)
 {
 	minMaxHeap h;
 	h.vec = malloc(sizeof(void *) * initialCapacity);
@@ -21,9 +22,9 @@ minMaxHeap newMinMaxHeapWithCapacity(int (*cmp)(const void *, const void *), con
 	return h;
 }
 
-minMaxHeap newMinMaxHeap(int (*cmp)(const void *, const void *))
+minMaxHeap newMinMaxminMaxHeap(int (*cmp)(const void *, const void *))
 {
-	return newMinMaxHeapWithCapacity(cmp, MIN_MIN_MAX_HEAP_CAPACITY);
+	return newMinMaxminMaxHeapWithCapacity(cmp, MIN_MIN_MAX_HEAP_CAPACITY);
 }
 
 size_t parent(size_t i)
@@ -43,7 +44,7 @@ size_t left(size_t i)
 
 size_t nodeLevel(size_t i)
 {
-
+	return log2(i);
 }
 
 size_t isMinLevel(size_t i)
@@ -56,7 +57,7 @@ bool hasGrandparent(size_t i)
 	return i > 2;
 }
 
-size_t getMaxIndex(const heap *h)
+size_t getMaxIndex(const minMaxHeap *h)
 {
 	if (h->size == 1)
 		return 0;
@@ -67,25 +68,25 @@ size_t getMaxIndex(const heap *h)
 	return 2;
 }
 
-void heapifyMaxUp(heap *h, size_t i)
+void minMaxHeapifyMaxUp(minMaxHeap *h, size_t i)
 {
 	const size_t grandparent = parent(parent(i));
 	if (hasGrandparent(i) && h->cmp(h->vec[i], h->vec[grandparent]) > 0) {
 		swap(&h->vec[i], &h->vec[grandparent], sizeof(void *));
-		heapifyMaxUp(h, grandparent);
+		minMaxHeapifyMaxUp(h, grandparent);
 	}
 }
 
-void heapifyMinUp(heap *h, size_t i)
+void minMaxHeapifyMinUp(minMaxHeap *h, size_t i)
 {
 	const size_t grandparent = parent(parent(i));
 	if (hasGrandparent(i) && h->cmp(h->vec[i], h->vec[grandparent]) < 0) {
 		swap(&h->vec[i], &h->vec[grandparent], sizeof(void *));
-		heapifyMinUp(h, grandparent);
+		minMaxHeapifyMinUp(h, grandparent);
 	}
 }
 
-void heapifyUp(heap *h, size_t i)
+void minMaxHeapifyUp(minMaxHeap *h, size_t i)
 {
 	const size_t p = parent(i);
 
@@ -93,41 +94,41 @@ void heapifyUp(heap *h, size_t i)
 		return;
 
 	if (isMinLevel(i)) {
-		if (h->cmp(h->vec[i], h->vec[p] > 0)) {
+		if (h->cmp(h->vec[i], h->vec[p]) > 0) {
 			swap(&h->vec[i], &h->vec[p], sizeof(void *));
-			heapifyMaxUp(h, p)
+			minMaxHeapifyMaxUp(h, p);
 		} else {
-			heapifyMinUp(h, i);
+			minMaxHeapifyMinUp(h, i);
 		}
 	} else {
-		if (h->cmp(h->vec[i], h->vec[p] < 0)) {
+		if (h->cmp(h->vec[i], h->vec[p]) < 0) {
 			swap(&h->vec[i], &h->vec[p], sizeof(void *));
-			heapifyMinUp(h, p)
+			minMaxHeapifyMinUp(h, p);
 		} else {
-			heapifyMaxUp(h, i);
+			minMaxHeapifyMaxUp(h, i);
 		}
 	}
 }
 
-void heapifyMaxDown(heap *h, size_t i)
+void minMaxHeapifyMaxDown(minMaxHeap *h, size_t i)
 {
 
 }
 
-void heapifyMinDown(heap *h, size_t i)
+void minMaxHeapifyMinDown(minMaxHeap *h, size_t i)
 {
 
 }
 
-void heapifyDown(heap *h, size_t i)
+void minMaxHeapifyDown(minMaxHeap *h, size_t i)
 {
 	if (isMinLevel(i))
-		heapifyMinDown(h, i);
+		minMaxHeapifyMinDown(h, i);
 	else
-		heapifyMaxDown(h, i);
+		minMaxHeapifyMaxDown(h, i);
 }
 
-void heapPush(heap *h, void *data)
+void minMaxHeapPush(minMaxHeap *h, void *data)
 {
 	h->size++;
 	if (h->size > h->capacity) {
@@ -136,54 +137,54 @@ void heapPush(heap *h, void *data)
 	}
 
 	h->vec[h->size - 1] = data;
-	heapifyUp(h, h->size - 1);
+	minMaxHeapifyUp(h, h->size - 1);
 
 
 }
 
-const void *heapPeekMin(const heap *h)
+const void *minMaxHeapPeekMin(const minMaxHeap *h)
 {
 	return h->vec[0];
 }
 
-const void *heapPeekMax(const heap *h)
+const void *minMaxHeapPeekMax(const minMaxHeap *h)
 {
 	return h->vec[getMaxIndex(h)];
 }
 
-void *heapPopMax(heap *h)
+void *minMaxHeapPopMax(minMaxHeap *h)
 {
 	size_t minI = getMaxIndex(h);
 	void *minData = h->vec[minI];
 	h->vec[minI] = h->vec[--h->size];
-	heapifyDown(h, minI);
+	minMaxHeapifyDown(h, minI);
 }
 
-void *heapPopMin(heap *h)
+void *minMaxHeapPopMin(minMaxHeap *h)
 {
 	void *minData = h->vec[0];
 	h->vec[0] = h->vec[--h->size];
-	heapifyMinDown(h, 0);
+	minMaxHeapifyMinDown(h, 0);
 	return minData;
 }
 
-size_t heapGetSize(const heap *h)
+size_t minMaxHeapGetSize(const minMaxHeap *h)
 {
 	return h->size;
 }
 
-bool heapIsEmpty(const heap *h)
+bool minMaxHeapIsEmpty(const minMaxHeap *h)
 {
 	return h->size == 0;
 }
 
-void heapShrinkToFit(heap *h)
+void minMaxHeapShrinkToFit(minMaxHeap *h)
 {
 	h->capacity = h->size;
 	h->vec = realloc(h->vec, sizeof(void *) * h->capacity);
 }
 
-void heapClear(heap *h, void (*freeData)(void *))
+void minMaxHeapClear(minMaxHeap *h, void (*freeData)(void *))
 {
 	if (freeData != NULL)
 		for (size_t i = 0; i < h->size; i++)
@@ -191,7 +192,7 @@ void heapClear(heap *h, void (*freeData)(void *))
 	h->size = 0;
 }
 
-void heapFree(heap *h, void (*freeData)(void *))
+void minMaxHeapFree(minMaxHeap *h, void (*freeData)(void *))
 {
 	if (freeData != NULL)
 		for (size_t i = 0; i < h->size; i++)

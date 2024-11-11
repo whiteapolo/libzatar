@@ -4,12 +4,12 @@
 
 priorityQueue newPriorityQueueWithCapacity(int (*cmp)(const void *, const void *), const size_t initializeCapacity)
 {
-	return newHeap(cmp, initializeCapacity);
+	return newHeapWithCapacity(cmp, initializeCapacity);
 }
 
 priorityQueue newPriorityQueue(int (*cmp)(const void *, const void *))
 {
-	return newHeap(cmp, MIN_PRIORITY_QUEUE_CAPACITY);
+	return newHeapWithCapacity(cmp, MIN_PRIORITY_QUEUE_CAPACITY);
 }
 
 void priorityQueuePush(priorityQueue *q, void *data)
