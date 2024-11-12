@@ -57,6 +57,29 @@ bool hasGrandparent(size_t i)
 	return i > 2;
 }
 
+size_t getMinChildsIndex(const minMaxHeap *h, size_t i)
+{
+	const size_t l = left(i);
+	const size_t r = right(i);
+	if (h->cmp(h->vec[l], h->vec[r]) < 0)
+		return l;
+	return r;
+}
+
+size_t minChildAndGrandchildIndex(const minMaxHeap *h, size_t i)
+{
+	const size_t minChild = getMinChildsIndex(h, i);
+	const size_t minLeftGrandChild = getMinChildsIndex(h, left(i));
+	const size_t minRightGrandChild = getMinChildsIndex(h, right(i));
+
+	size_t min;
+	if (h->cmp(h->vec[minChild], h->vec[minLeftGrandChild]) < 0)
+		min = minChild;
+	if (h->cmp(h->vec[min], h->vec[minRightGrandChild]) < 0)
+		min = minChild;
+	return min;
+}
+
 size_t getMaxIndex(const minMaxHeap *h)
 {
 	if (h->size == 1)

@@ -61,7 +61,7 @@ string newStrSlice(const strSlice s, ssize_t start, ssize_t end, const ssize_t s
 
 	string slice = newStr("");
 	ssize_t i = start;
-	while (i != (ssize_t)end && i >= 0 && (size_t)i < s.len) {
+	while (i != end && i >= 0 && i < (ssize_t)s.len) {
 		strPushc(&slice, s.data[i]);
 		i += step;
 	}
