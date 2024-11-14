@@ -5,12 +5,58 @@
 #include <sys/types.h>
 #include <time.h>
 
+typedef struct {
+	ssize_t start;
+	ssize_t step;
+	ssize_t end;
+	ssize_t i;
+} vecIter;
+
+vecIter newVecIter(const vector *v, const ssize_t start, const ssize_t end, const ssize_t step)
+{
+	assert(step != 0);
+	vecIter vi = {
+		.start = start,
+		.end = end,
+		.step = step,
+	};
+
+	// wrap negative values to the end of the array
+	if (vi.start < 0)
+		vi.start += vecSize(v);
+	if (vi.end < 0)
+		vi.end += vecSize(v);
+	return vi;
+}
+
+ssize_t vecIterBegin(vecIter *vi)
+{
+	vi->i = vi->start;
+	return vi->i;
+}
+
+ssize_t vecIterNext(vecIter *vi)
+{
+	vi->i += vi->step;
+	return vi->i;
+}
+
+bool vecIterHasNext(const vecIter *vi)
+{
+	if (vi->step > 0 && vi->i > vi->end)
+		return true;
+	if (vi->step < 0 && vi->i < vi->end)
+		return true;
+	return false;
+}
+
 vector newVecWithCapacity(const size_t initialCapacity)
 {
-	vector v;
-	v.size = 0;
-	v.capacity = initialCapacity;
-	v.data = malloc(sizeof(void *) * initialCapacity);
+	vector v = {
+		.size = 0,
+		.capacity = initialCapacity,
+		.data = malloc(sizeof(void *) * initialCapacity),
+	};
 	return v;
 }
 
@@ -21,6 +67,7 @@ vector newVec()
 
 const void *vecAt(const vector *v, const size_t i)
 {
+	assert(i < v->size);
 	return v->data[i];
 }
 
@@ -41,6 +88,7 @@ void *vecRemoveLast(vector *v)
 
 void vecInsertAt(vector *v, size_t i, void *data)
 {
+	assert(i <= v->size);
 	v->size++;
 	if (v->size > v->capacity) {
 		v->capacity *= 2;
@@ -52,6 +100,7 @@ void vecInsertAt(vector *v, size_t i, void *data)
 
 void *vecRemoveAt(vector *v, size_t i)
 {
+	assert(i < v->size);
 	void *dataToRemove = v->data[i];
 	memmove(&v->data[i], &v->data[i+1], sizeof(void *) * (v->size - i - 1));
 	v->size--;
@@ -70,32 +119,22 @@ void vecSwap(vector *v, const size_t i, const size_t j)
 	swap(&v->data[i], &v->data[j], sizeof(void *));
 }
 
-void vecRemoveRange(vector *v, ssize_t start, ssize_t end, const ssize_t step, void (*freeData)(void *))
+void vecRemoveRange(vector *v, const ssize_t start, const ssize_t end, const ssize_t step, void freeData(void *))
 {
-	int indexs[vecSize(v)];
-	for (int i = 0; i < vecSize(v); i++)
-		indexs[i] = i;
-
-	if (start < 0)
-		start += vecSize(v);
-	if (end < 0)
-		end += vecSize(v);
-	assert(step != 0);
-
-	ssize_t i = start;
-	while (i != end && i >= 0 && i < (ssize_t)vecSize(v)) {
-		indexs[i] = -1;
+	int tmpPtr;
+	vecIter vi = newVecIter(v, start, end, step);
+	for (ssize_t i = vecIterBegin(&vi); vecIterHasNext(&vi); i = vecIterNext(&vi)) {
 		if (freeData != NULL)
-			freeData((void *)vecAt(v, i));
-		i += step;
+			freeData(vecReplace(v, i, &tmpPtr));
+		else
+			vecReplace(v, i, &tmpPtr);
 	}
 
 	vector tmp = newVecWithCapacity(vecSize(v));
-
-	for (int i = 0; i < vecSize(v); i++)
-		if (indexs[i] != -1)
-			vecAdd(&tmp, vecAt(v, i));
-
+	for (size_t i = 0; i < vecSize(v); i++)
+		vecAdd(&tmp, (void *)vecAt(v, i));
+	vecFree(v, NULL);
+	*v = tmp;
 }
 
 void vecAddVec(vector *dest, vector *src)
@@ -129,7 +168,7 @@ bool vecIsEmpty(const vector *v)
 	return vecSize(v) == 0;
 }
 
-vector vecClone(const vector *v, void *(*dupData)(const void *))
+vector vecClone(const vector *v, void *dupData(const void *))
 {
 	vector new = newVecWithCapacity(vecSize(v));
 	for (size_t i = 0; i < vecSize(v); i++)
@@ -137,20 +176,12 @@ vector vecClone(const vector *v, void *(*dupData)(const void *))
 	return new;
 }
 
-vector vecCloneRange(const vector *v, ssize_t start, ssize_t end, const ssize_t step, void *(*dupData)(const void *))
+vector vecCloneRange(const vector *v, const ssize_t start, const ssize_t end, const ssize_t step, void *dupData(const void *))
 {
-	if (start < 0)
-		start += vecSize(v);
-	if (end < 0)
-		end += vecSize(v);
-	assert(step != 0);
-
 	vector clone = newVecWithCapacity(vecSize(v));
-	ssize_t i = start;
-	while (i != end && i >= 0 && i < (ssize_t)vecSize(v)) {
+	vecIter vi = newVecIter(v, start, end, step);
+	for (ssize_t i = vecIterBegin(&vi); vecIterHasNext(&vi); i = vecIterNext(&vi))
 		vecAdd(&clone, dupData(vecAt(v, i)));
-		i += step;
-	}
 	return clone;
 }
 
@@ -160,7 +191,7 @@ void vecShrinkToFit(vector *v)
 	v->data = realloc(v->data, sizeof(void *) * v->capacity);
 }
 
-void vecClear(vector *v, void (*freeData)(void *))
+void vecClear(vector *v, void freeData(void *))
 {
 	if (freeData != NULL)
 		for (size_t i = 0; i < vecSize(v); i++)
@@ -168,7 +199,7 @@ void vecClear(vector *v, void (*freeData)(void *))
 	v->size = 0;
 }
 
-void vecFree(vector *v, void (*freeData)(void *))
+void vecFree(vector *v, void freeData(void *))
 {
 	if (freeData != NULL)
 		for (size_t i = 0; i < vecSize(v); i++)
@@ -176,7 +207,7 @@ void vecFree(vector *v, void (*freeData)(void *))
 	free(v->data);
 }
 
-void vecSort(vector *v, int (*cmp)(const void *, const void *))
+void vecSort(vector *v, int cmp(const void *, const void *))
 {
 	qsort(v->data, v->size, sizeof(void *), cmp);
 }
@@ -192,69 +223,55 @@ void vecReverse(vector *v)
 
 void vecShuffle(vector *v)
 {
-	srand(time(NULL));
+	unsigned int seed = time(NULL);
 	for (size_t i = 0; i < vecSize(v); i++) {
-		const size_t j = rand() % vecSize(v);
+		seed = zatarRand(seed);
+		const size_t j = seed % vecSize(v);
 		vecSwap(v, i, j);
 	}
 }
 
-void vecReduce(vector *v, bool (*shouldRemove)(const void *, size_t i), void (*freeData)(void *))
+void vecReduce(vector *v, bool shouldRemove(const void *, size_t i), void freeData(void *))
 {
 	vector tmp = newVecWithCapacity(v->capacity);
 	for (size_t i = 0; i < vecSize(v); i++) {
-		if (!shouldRemove(vecAt(v, i), i))
-			vecAdd(&tmp, (void *)vecAt(v, i));
+		void *currData = (void *)vecAt(v, i);
+		if (!shouldRemove(currData, i))
+			vecAdd(&tmp, currData);
 		else if (freeData != NULL)
-			freeData((void *)vecAt(v, i));
+			freeData(currData);
 	}
 	vecFree(v, NULL);
 	*v = tmp;
 }
 
-void vecTransform(vector *v, void *(*transform)(const void *))
+void vecTransform(vector *v, void *transform(const void *))
 {
 	for (size_t i = 0; i < vecSize(v); i++)
 		vecReplace(v, i, transform(vecAt(v, i)));
 }
 
-void vecTransformRange(vector *v, void *(*transform)(const void *), ssize_t start, ssize_t end, const size_t step)
+void vecTransformRange(vector *v, const ssize_t start, const ssize_t end, const size_t step, void *transform(const void *))
 {
-	if (start < 0)
-		start += vecSize(v);
-	if (end < 0)
-		end += vecSize(v);
-	assert(step != 0);
-
-	ssize_t i = start;
-	while (i != end && i >= 0 && i < (ssize_t)vecSize(v)) {
+	vecIter vi = newVecIter(v, start, end, step);
+	for (ssize_t i = vecIterBegin(&vi); vecIterHasNext(&vi); i = vecIterNext(&vi))
 		vecReplace(v, i, transform(vecAt(v, i)));
-		i += step;
-	}
 }
 
-void vecForEach(const vector *v, void (*action)(const void *))
+void vecForEach(const vector *v, void action(const void *))
 {
 	for (size_t i = 0; i < vecSize(v); i++)
 		action(vecAt(v, i));
 }
 
-void vecForEachRange(const vector *v, ssize_t start, ssize_t end, const size_t step, void (*action)(const void *))
+void vecForEachRange(const vector *v, const ssize_t start, const ssize_t end, const size_t step, void action(const void *))
 {
-	if (start < 0)
-		start += vecSize(v);
-	if (end < 0)
-		end += vecSize(v);
-	assert(step != 0);
-
-	ssize_t i = start;
-	while (i != end && i >= 0 && i < (ssize_t)vecSize(v)) {
+	vecIter vi = newVecIter(v, start, end, step);
+	for (ssize_t i = vecIterBegin(&vi); vecIterHasNext(&vi); i = vecIterNext(&vi))
 		action(vecAt(v, i));
-		i += step;
-	}
 }
 
-void vecPrint(const vector *v, void (*printData)(const void *))
+void vecPrint(const vector *v, void printData(const void *))
 {
 	printf("[ ");
 	vecForEach(v, printData);

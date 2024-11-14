@@ -8,6 +8,7 @@
 
 #define ADDRESS(element) (&((typeof(element)){element}))
 #define DUP(value) memdup(ADDRESS(value), sizeof(value))
+#define IN_RANGE(min, x, max) ((min) <= (x) && (x) <= (max))
 
 typedef enum { Ok = 0, Err = -1, } Result;
 
@@ -16,6 +17,7 @@ int zatarMin(const int a, const int b);
 int zatarMin3(const int a, const int b, const int c);
 int zatarMax3(const int a, const int b, const int c);
 
+int zatarRand(const unsigned int seed);
 void swap(void *a, void *b, const size_t size);
 size_t getFileSize(FILE *fp);
 int getFmtSize(const char *fmt, ...);

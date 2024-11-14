@@ -61,3 +61,8 @@ void *memdup(const void *mem, const size_t size)
 	memcpy(newMem, mem, size);
 	return newMem;
 }
+
+int zatarRand(const unsigned int seed)
+{
+	return (6364136223846793005ULL * seed + 1)>>33;
+}

@@ -1,3 +1,4 @@
+#include <wh/messure_time.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,8 +21,15 @@
 
 int main()
 {
+	// vector v = newVec();
+	// for (int i = 0; i < 100; i++)
+	// 	vecAdd(&v, DUP(5));
 
-	vector v = newVector(free, )
+	// vector v = newVec();
+	// for (int i = 0; i < 100; i++)
+	// 	vecAdd(&v, ADDRESS(5));
+
+
 
 	// RUN_TEST(stackTest);
 	// RUN_TEST(queueTest);
