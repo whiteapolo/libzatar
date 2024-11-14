@@ -22,7 +22,7 @@ typedef struct {
 string newStr(const char *fmt, ...);
 string newStrWithCapacity(const size_t initialCapacity, const char *fmt, ...);
 string newStrVa(const size_t minSize, const char *fmt, va_list ap);
-string newStrFromExisting(const strSlice s);
+string strClone(const strSlice s);
 string newStrFromArray(char *s[], const size_t len, const char *delim);
 string newStrSlice(const strSlice s, ssize_t start, ssize_t end, const ssize_t step);
 

@@ -135,12 +135,14 @@ void minMaxHeapifyUp(minMaxHeap *h, size_t i)
 
 void minMaxHeapifyMaxDown(minMaxHeap *h, size_t i)
 {
-
+	(void)h;
+	(void)i;
 }
 
 void minMaxHeapifyMinDown(minMaxHeap *h, size_t i)
 {
-
+	(void)h;
+	(void)i;
 }
 
 void minMaxHeapifyDown(minMaxHeap *h, size_t i)
@@ -181,6 +183,7 @@ void *minMaxHeapPopMax(minMaxHeap *h)
 	void *minData = h->vec[minI];
 	h->vec[minI] = h->vec[--h->size];
 	minMaxHeapifyDown(h, minI);
+	return minData;
 }
 
 void *minMaxHeapPopMin(minMaxHeap *h)

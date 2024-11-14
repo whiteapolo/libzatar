@@ -38,7 +38,7 @@ string newStrVa(const size_t minSize, const char *fmt, va_list ap)
 	return s;
 }
 
-string newStrFromExisting(const strSlice s)
+string strClone(const strSlice s)
 {
 	return newStr("%.*s", s.len, s.data);
 }

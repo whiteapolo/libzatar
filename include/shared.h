@@ -23,16 +23,16 @@ typedef uint64_t u64;
 
 typedef enum { Ok = 0, Err = -1, } Result;
 
-int zatarMax(const int a, const int b);
-int zatarMin(const int a, const int b);
-int zatarMin3(const int a, const int b, const int c);
-int zatarMax3(const int a, const int b, const int c);
+i32 zatarMax(const i32 a, const i32 b);
+i32 zatarMin(const i32 a, const i32 b);
+i32 zatarMin3(const i32 a, const i32 b, const i32 c);
+i32 zatarMax3(const i32 a, const i32 b, const i32 c);
 
-int zatarRand(const unsigned int seed);
-void swap(void *a, void *b, const size_t size);
-size_t getFileSize(FILE *fp);
-int getFmtSize(const char *fmt, ...);
-int getFmtSizeVa(const char *fmt, va_list ap);
-void *memdup(const void *mem, const size_t size);
+i32 zatarRand(const u32 seed);
+void swap(void *a, void *b, const u64 size);
+u64 getFileSize(FILE *fp);
+i32 getFmtSize(const char *fmt, ...);
+i32 getFmtSizeVa(const char *fmt, va_list ap);
+void *memdup(const void *mem, const u64 size);
 
 #endif
