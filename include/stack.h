@@ -1,24 +1,21 @@
 #ifndef STACK_H
 #define STACK_H
 #include "shared.h"
+#include "vector.h"
 
-typedef struct {
-	void **data;
-	size_t len;
-	size_t capacity;
-} stack;
+typedef Vector Stack;
 
-#define MIN_STACK_CAPACITY 16
+#define MIN_STACK_CAPACITY 4
 
-stack newStack();
-stack newStackWithCapacity(const size_t capacity);
-void stackPush(stack *s, void *data);
-void *stackPop(stack *s);
-void *stackTop(const stack *s);
-size_t stackSize(const stack *s);
-bool stackIsEmpty(const stack *s);
-void stackShrinkToFit(stack *s);
-void stackClear(stack *s);
-void stackFree(stack *s, void (*freeData)(void *));
+Stack *newStack();
+Stack *newStackWithCapacity(const u64 capacity);
+void stackPush(Stack *s, void *data);
+void *stackPop(Stack *s);
+const void *stackTop(const Stack *s);
+u64 stackSize(const Stack *s);
+bool stackIsEmpty(const Stack *s);
+void stackShrinkToFit(Stack *s);
+void stackClear(Stack *s, void freeData(void *));
+void stackFree(Stack *s, void freeData(void *));
 
 #endif

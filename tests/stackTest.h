@@ -3,90 +3,88 @@
 
 TEST(newStackTest)
 {
-	stack s = newStack();
-	EXPECT(s.len == 0, "len should be 0");
+	Stack *s = newStack();
+	EXPECT(stackSize(s) == 0, "size should be 0");
 }
 
 TEST(newStackWithCapacityTest)
 {
-	stack s = newStackWithCapacity(10);
-	EXPECT(s.len == 0, "len should be 0");
-	EXPECT(s.capacity == 10, "capacity should be 10");
+	Stack *s = newStackWithCapacity(10);
+	EXPECT(stackSize(s) == 0, "size should be 0");
 }
 
 TEST(stackPushTest)
 {
-	stack s = newStack();
-	stackPush(&s, DUP(5));
-	EXPECT(s.len == 1, "len should be 1");
+	Stack *s = newStack();
+	stackPush(s, DUP(5));
+	EXPECT(stackSize(s) == 1, "size should be 1");
 }
 
 TEST(stackPopTest)
 {
-	stack s = newStack();
-	stackPush(&s, DUP(1));
-	stackPush(&s, DUP(6));
-	stackPush(&s, DUP(2));
-	EXPECT(*(int*)stackPop(&s) == 2, "poped item should be 2");
-	EXPECT(*(int*)stackPop(&s) == 6, "poped item should be 6");
-	EXPECT(*(int*)stackPop(&s) == 1, "poped item should be 1");
+	Stack *s = newStack();
+	stackPush(s, DUP(1));
+	stackPush(s, DUP(6));
+	stackPush(s, DUP(2));
+	EXPECT(*(int*)stackPop(s) == 2, "poped item should be 2");
+	EXPECT(*(int*)stackPop(s) == 6, "poped item should be 6");
+	EXPECT(*(int*)stackPop(s) == 1, "poped item should be 1");
 }
 
 TEST(stackTopTest)
 {
-	stack s = newStack();
-	stackPush(&s, DUP(1));
-	stackPush(&s, DUP(6));
-	stackPush(&s, DUP(2));
-	const int *x = stackTop(&s);
-	x = stackTop(&s);
+	Stack *s = newStack();
+	stackPush(s, DUP(1));
+	stackPush(s, DUP(6));
+	stackPush(s, DUP(2));
+	const int *x = stackTop(s);
+	x = stackTop(s);
 	EXPECT(*x == 2, "poped item should be 2");
 }
 
 TEST(stackSizeTest)
 {
-	stack s = newStack();
-	EXPECT(stackSize(&s) == 0, "stack size should be 0");
-	stackPush(&s, DUP(2));
-	stackPush(&s, DUP(2));
-	stackPush(&s, DUP(2));
-	EXPECT(stackSize(&s) == 3, "stack size should be 3");
+	Stack *s = newStack();
+	EXPECT(stackSize(s) == 0, "Stack *size should be 0");
+	stackPush(s, DUP(2));
+	stackPush(s, DUP(2));
+	stackPush(s, DUP(2));
+	EXPECT(stackSize(s) == 3, "Stack *size should be 3");
 }
 
 TEST(stackIsEmptyTest)
 {
-	stack s = newStack();
-	EXPECT(stackIsEmpty(&s) == true, "stack should be empty");
-	stackPush(&s, DUP(2));
-	EXPECT(stackIsEmpty(&s) == false, "stack should not be empty");
-	stackPush(&s, DUP(2));
-	stackPush(&s, DUP(2));
-	EXPECT(stackIsEmpty(&s) == false, "stack should not be empty");
-	stackPop(&s);
-	stackPop(&s);
-	stackPop(&s);
-	EXPECT(stackIsEmpty(&s) == true, "stack should be empty");
+	Stack *s = newStack();
+	EXPECT(stackIsEmpty(s) == true, "Stack *should be empty");
+	stackPush(s, DUP(2));
+	EXPECT(stackIsEmpty(s) == false, "Stack *should not be empty");
+	stackPush(s, DUP(2));
+	stackPush(s, DUP(2));
+	EXPECT(stackIsEmpty(s) == false, "Stack *should not be empty");
+	stackPop(s);
+	stackPop(s);
+	stackPop(s);
+	EXPECT(stackIsEmpty(s) == true, "Stack *should be empty");
 }
 
 TEST(stackShrinkToFitTest)
 {
-	stack s = newStackWithCapacity(10);
-	stackPush(&s, NULL);
-	stackPush(&s, NULL);
-	stackPush(&s, NULL);
-	stackShrinkToFit(&s);
-	EXPECT(s.capacity == 3, "capacity should be 0");
+	Stack *s = newStackWithCapacity(10);
+	stackPush(s, NULL);
+	stackPush(s, NULL);
+	stackPush(s, NULL);
+	stackShrinkToFit(s);
 }
 
 TEST(stackClearTest)
 {
-	stack s = newStack();
-	stackPush(&s, DUP(5));
-	stackPush(&s, DUP(5));
-	stackPush(&s, DUP(5));
-	stackPush(&s, DUP(5));
-	stackClear(&s);
-	EXPECT(s.len ==  0, "stack len after clear should be 0");
+	Stack *s = newStack();
+	stackPush(s, DUP(5));
+	stackPush(s, DUP(5));
+	stackPush(s, DUP(5));
+	stackPush(s, DUP(5));
+	stackClear(s, free);
+	EXPECT(stackSize(s) == 0, "size should be 0");
 }
 
 TEST(stackTest)

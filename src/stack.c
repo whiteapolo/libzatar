@@ -1,64 +1,52 @@
 #include <string.h>
 #include "stack.h"
 
-stack newStack()
+Stack *newStack()
 {
 	return newStackWithCapacity(MIN_STACK_CAPACITY);
 }
 
-stack newStackWithCapacity(const size_t capacity)
+Stack *newStackWithCapacity(const u64 capacity)
 {
-	stack s;
-	s.capacity = capacity;
-	s.data = malloc(sizeof(void*) * s.capacity);
-	s.len = 0;
-	return s;
+	return newVecWithCapacity(capacity);
 }
 
-void stackPush(stack *s, void *data)
+void stackPush(Stack *s, void *data)
 {
-	if (s->len + 1 > s->capacity) {
-		s->capacity *= 2;
-		s->data = realloc(s->data, sizeof(void*) * s->capacity);
-	}
-	s->data[s->len++] = data;
+	vecAdd(s, data);
 }
 
-void *stackPop(stack *s)
+void *stackPop(Stack *s)
 {
-	return s->data[--s->len];
+	return vecRemoveLast(s);
 }
 
-void *stackTop(const stack *s)
+const void *stackTop(const Stack *s)
 {
-	return s->data[s->len - 1];
+	return vecAt(s, vecSize(s) - 1);
 }
 
-size_t stackSize(const stack *s)
+u64 stackSize(const Stack *s)
 {
-	return s->len;
+	return vecSize(s);
 }
 
-bool stackIsEmpty(const stack *s)
+bool stackIsEmpty(const Stack *s)
 {
-	return s->len == 0;
+	return vecIsEmpty(s);
 }
 
-void stackShrinkToFit(stack *s)
+void stackShrinkToFit(Stack *s)
 {
-	s->capacity = s->len;
-	s->data = realloc(s->data, sizeof(void*) * s->capacity);
+	vecShrinkToFit(s);
 }
 
-void stackClear(stack *s)
+void stackClear(Stack *s, void freeData(void *))
 {
-	s->len = 0;
+	vecClear(s, freeData);
 }
 
-void stackFree(stack *s, void (*freeData)(void *))
+void stackFree(Stack *s, void freeData(void *))
 {
-	if (freeData != NULL)
-		for (size_t i = 0; i < s->len; i++)
-			freeData(s->data[i]);
-	free(s->data);
+	vecFree(s, freeData);
 }
