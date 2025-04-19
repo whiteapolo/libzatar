@@ -1,3 +1,4 @@
+#include <endian.h>
 #include <stdlib.h>
 #include "circularList.h"
 
@@ -26,11 +27,15 @@ void *circularListPop(circularList **cl)
 {
 	circularList *toRemove = (*cl)->next;
 	void *data = toRemove->data;
-	if (*cl == toRemove)
+
+	if (*cl == toRemove) {
 		*cl = NULL;
-	else
+	} else {
 		(*cl)->next = (*cl)->next->next;
+	}
+
 	free(toRemove);
+
 	return data;
 }
 
@@ -42,37 +47,62 @@ void circularListInsertAfter(circularList *cl, void *data)
 	cl->next = n;
 }
 
+void circularListInsertLast(circularList **cl, void *data)
+{
+	circularList *n = malloc(sizeof(circularList));
+	n->data = data;
+
+	if (*cl == NULL) {
+		n->next = n;
+	} else if ((*cl)->next == (*cl)) {
+		n->next = *cl;
+		(*cl)->next = n;
+	} else {
+		n->next = (*cl)->next;
+		(*cl)->next = n;
+	}
+
+	*cl = n;
+}
+
 void *circularListRemoveAfter(circularList *cl)
 {
 	circularList *toRemove = cl->next;
 	cl->next = cl->next->next;
 	void *tmp = toRemove->data;
 	free(toRemove);
+
 	return tmp;
 }
 
-void circularListPushEnd(circularList **cl, void *data)
+void circularListFree(circularList *cl, void freeData(void *))
 {
-	circularList *n = malloc(sizeof(circularList));
-	n->data = data;
-	n->next = (*cl)->next;
-	(*cl)->next = n;
-	*cl = n;
-}
-
-void circularListFree(circularList *cl, void (*freeData)(void *))
-{
-	if (freeData)
-		while (cl != NULL)
+	if (freeData) {
+		while (cl != NULL) {
 			freeData(circularListPop(&cl));
-	else
-		while (cl != NULL)
+		}
+	} else {
+		while (cl != NULL) {
 			circularListPop(&cl);
+		}
+	}
 }
 
-void circularListPrint(circularList *cl, void (*printData)(const void *))
+void circularListPrint(circularList *cl, void printData(const void *))
 {
-	for (circularList *curr = cl->next; curr != cl; curr = curr->next)
+	if (cl == NULL) {
+		printf("{}\n");
+		return;
+	}
+
+	printf("{ ");
+
+	for (circularList *curr = cl->next; curr != cl; curr = curr->next) {
 		printData(curr->data);
-	printData(cl);
+		printf(", ");
+	}
+
+	printData(cl->data);
+
+	printf(" }\n");
 }

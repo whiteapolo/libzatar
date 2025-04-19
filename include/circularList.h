@@ -10,9 +10,10 @@ typedef struct circularList {
 circularList *newCircularList();
 void circularListPush(circularList **cl, void *data);
 void *circularListPop(circularList **cl);
+void circularListInsertLast(circularList **cl, void *data);
 void circularListInsertAfter(circularList *cl, void *data);
 void *circularListRemoveAfter(circularList *cl);
-void circularListFree(circularList *cl, void (*freeData)(void *));
-void circularListPrint(circularList *cl, void (*printData)(const void *));
+void circularListFree(circularList *cl, void freeData(void *));
+void circularListPrint(circularList *cl, void printData(const void *));
 
 #endif

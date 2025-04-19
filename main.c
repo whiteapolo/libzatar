@@ -10,17 +10,15 @@ void printInt(const void *x)
 
 int main(void)
 {
+	Queue *q = newQueue();
 
-	int x = 3;
-	Stack *s = newStack();
-	stackPush(s, &x);
-	stackPush(s, &x);
-	stackPush(s, &x);
-	stackPush(s, &x);
+	for(int i = 0; i < 2; i++) {
+		queuePush(q, DUP(i));
+	}
 
-	stackPrint(s, printInt);
+	printf("%d\n", queueSize(q));
 
-
+	queuePrint(q, printInt);
 
 	return 0;
 }

@@ -2,6 +2,8 @@
 	Libraries in this file:
 	- vector
 	- stack
+	- circular list
+	- queue
 	- path
 	- cursor
 */
@@ -102,12 +104,51 @@ void stackFree(Stack *s, void freeData(void *));
 void stackPrint(const Vector *v, void printData(const void *));
 
 /*********************************************
+                 Circular list
+**********************************************/
+
+typedef struct circularList {
+	struct circularList *next;
+	void *data;
+} circularList;
+
+circularList *newCircularList();
+void circularListPush(circularList **cl, void *data);
+void *circularListPop(circularList **cl);
+void circularListInsertAfter(circularList *cl, void *data);
+void circularListInsertLast(circularList **cl, void *data);
+void *circularListRemoveAfter(circularList *cl);
+void circularListFree(circularList *cl, void freeData(void *));
+void circularListPrint(circularList *cl, void printData(const void *));
+
+/*********************************************
+                 Queue
+**********************************************/
+
+typedef struct {
+	circularList *cl;
+	u64 size;
+} Queue;
+
+Queue *newQueue();
+void queuePush(Queue *q, void *data);
+void *queuePop(Queue *q);
+void *queuePeek(Queue *q);
+bool queueIsEmpty(const Queue *q);
+u64 queueSize(const Queue *q);
+void queuePrint(const Queue *q, void printData(const void *));
+void queueClear(Queue *q, void freeData(void *));
+void queueFree(Queue *q, void freeData(void *));
+circularList *queueToCircularList(Queue *q);
+
+/*********************************************
                     String
 **********************************************/
 
 u64 getFileSize(FILE *fp);
 i32 getFmtSize(const char *fmt, ...);
 i32 getFmtSizeVa(const char *fmt, va_list ap);
+void *memdup(const void *mem, const size_t size);
 
 
 /*********************************************
@@ -610,6 +651,178 @@ void stackFree(Stack *s, void freeData(void *))
 void stackPrint(const Stack *s, void printData(const void *))
 {
 	vecPrint(s, printData);
+}
+
+/*********************************************
+        Circular List IMPLEMENTATION
+**********************************************/
+circularList *newCircularList()
+{
+	return NULL;
+}
+
+void circularListPush(circularList **cl, void *data)
+{
+	circularList *n = malloc(sizeof(circularList));
+	n->data = data;
+	if (*cl == NULL) {
+		n->next = n;
+		*cl = n;
+	} else if ((*cl)->next == (*cl)) {
+		n->next = *cl;
+		(*cl)->next = n;
+	} else {
+		n->next = (*cl)->next;
+		(*cl)->next = n;
+	}
+}
+
+void *circularListPop(circularList **cl)
+{
+	circularList *toRemove = (*cl)->next;
+	void *data = toRemove->data;
+
+	if (*cl == toRemove) {
+
+		*cl = NULL;
+	} else {
+		(*cl)->next = (*cl)->next->next;
+	}
+
+	free(toRemove);
+
+	return data;
+}
+
+void circularListInsertAfter(circularList *cl, void *data)
+{
+	circularList *n = malloc(sizeof(circularList));
+	n->data = data;
+	n->next = cl->next;
+	cl->next = n;
+}
+
+void *circularListRemoveAfter(circularList *cl)
+{
+	circularList *toRemove = cl->next;
+	cl->next = cl->next->next;
+	void *tmp = toRemove->data;
+	free(toRemove);
+
+	return tmp;
+}
+
+void circularListInsertLast(circularList **cl, void *data)
+{
+	circularList *n = malloc(sizeof(circularList));
+	n->data = data;
+
+	if (*cl == NULL) {
+		n->next = n;
+	} else if ((*cl)->next == (*cl)) {
+		n->next = *cl;
+		(*cl)->next = n;
+	} else {
+		n->next = (*cl)->next;
+		(*cl)->next = n;
+	}
+
+	*cl = n;
+}
+
+void circularListFree(circularList *cl, void freeData(void *))
+{
+	if (freeData) {
+		while (cl != NULL) {
+			freeData(circularListPop(&cl));
+		}
+	} else {
+		while (cl != NULL) {
+			circularListPop(&cl);
+		}
+	}
+}
+
+void circularListPrint(circularList *cl, void printData(const void *))
+{
+	if (cl == NULL) {
+		printf("{}\n");
+		return;
+	}
+
+	printf("{ ");
+
+	for (circularList *curr = cl->next; curr != cl; curr = curr->next) {
+		printData(curr->data);
+		printf(", ");
+	}
+
+	printData(cl->data);
+
+	printf(" }\n");
+}
+
+/*********************************************
+			Queue IMPLEMENTATION
+**********************************************/
+
+Queue *newQueue()
+{
+	Queue *q = malloc(sizeof(Queue));
+	q->size = 0;
+	q->cl = NULL;
+
+	return q;
+}
+
+void queuePush(Queue *q, void *data)
+{
+	q->size++;
+	circularListInsertLast(&q->cl, data);
+}
+
+void *queuePop(Queue *q)
+{
+	q->size--;
+	return circularListPop(&q->cl);
+}
+
+void *queuePeek(Queue *q)
+{
+	return q->cl->next->data;
+}
+
+bool queueIsEmpty(const Queue *q)
+{
+	return q->size == 0;
+}
+
+u64 queueSize(const Queue *q)
+{
+	return q->size;
+}
+
+void queuePrint(const Queue *q, void printData(const void *))
+{
+	circularListPrint(q->cl, printData);
+}
+
+void queueClear(Queue *q, void freeData(void *))
+{
+	circularListFree(q->cl, freeData);
+	q->size = 0;
+	q->cl = NULL;
+}
+
+void queueFree(Queue *q, void freeData(void *))
+{
+	circularListFree(q->cl, freeData);
+	free(q);
+}
+
+circularList *queueToCircularList(Queue *q)
+{
+	return q->cl;
 }
 
 /*********************************************
@@ -1137,6 +1350,13 @@ int getFmtSizeVa(const char *fmt, va_list ap)
 	va_end(ap1);
 
 	return size;
+}
+
+void *memdup(const void *mem, const size_t size)
+{
+	void *newMem = malloc(size);
+	memcpy(newMem, mem, size);
+	return newMem;
 }
 
 

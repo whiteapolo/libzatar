@@ -1,24 +1,21 @@
 #ifndef QUEUE_H
 #define QUEUE_H
-#include "list.h"
+#include "circularList.h"
 
 typedef struct {
-    list *start;
-    list *end;
-	size_t size;
-} queue;
+	circularList *cl;
+	u64 size;
+} Queue;
 
-#define EMPTY_QUEUE ((queue){0})
-
-queue newQueue();
-void queuePush(queue *q, void *data);
-void *queuePop(queue *q);
-void *queuePeek(queue *q);
-bool queueIsEmpty(const queue *q);
-size_t queueGetSize(const queue *q);
-void queuePrint(const queue *q, void (*printData)(const void *));
-void queueClear(queue *q, void (*freeData)(void *));
-void queueFree(queue *q, void (*freeData)(void *));
-list *queueToList(queue *q);
+Queue *newQueue();
+void queuePush(Queue *q, void *data);
+void *queuePop(Queue *q);
+void *queuePeek(Queue *q);
+bool queueIsEmpty(const Queue *q);
+u64 queueGetSize(const Queue *q);
+void queuePrint(const Queue *q, void printData(const void *));
+void queueClear(Queue *q, void freeData(void *));
+void queueFree(Queue *q, void freeData(void *));
+circularList *queueToCircularList(Queue *q);
 
 #endif

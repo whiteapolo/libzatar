@@ -1,71 +1,63 @@
 #include <string.h>
 #include "queue.h"
 #include "list.h"
+#include <stdlib.h>
 
-queue newQueue()
+Queue *newQueue()
 {
-	queue q;
-	q.start = NULL;
-	q.end = NULL;
-	q.size = 0;
+	Queue *q = malloc(sizeof(Queue));
+	q->size = 0;
+	q->cl = NULL;
+
 	return q;
 }
 
-void queuePush(queue *q, void *data)
+void queuePush(Queue *q, void *data)
 {
 	q->size++;
-	if (q->start == NULL) {
-		listPush(&q->start, data);
-		q->end = q->start;
-	} else {
-		listInsertAfter(q->end, data);
-		q->end = q->end->next;
-	}
+	circularListInsertLast(&q->cl, data);
 }
 
-void *queuePop(queue *q)
+void *queuePop(Queue *q)
 {
 	q->size--;
-	list *tmp = q->start->next;
-	void *data = listPop(&q->start);
-	q->start = tmp;
-	return data;
+	return circularListPop(&q->cl);
 }
 
-void *queuePeek(queue *q)
+void *queuePeek(Queue *q)
 {
-	return q->start->data;
+	return q->cl->next->data;
 }
 
-bool queueIsEmpty(const queue *q)
+bool queueIsEmpty(const Queue *q)
 {
-	return q->start == NULL;
+	return q->size == 0;
 }
 
-size_t queueGetSize(const queue *q)
+u64 queueGetSize(const Queue *q)
 {
 	return q->size;
 }
 
-void queuePrint(const queue *q, void (*printData)(const void *))
+void queuePrint(const Queue *q, void printData(const void *))
 {
-	listPrint(q->start, printData);
+	circularListPrint(q->cl, printData);
 }
 
-void queueClear(queue *q, void (*freeData)(void *))
+void queueClear(Queue *q, void freeData(void *))
 {
-	queueFree(q, freeData);
-	*q = newQueue();
+	circularListFree(q->cl, freeData);
+	q->size = 0;
+	q->cl = NULL;
 }
 
-void queueFree(queue *q, void (*freeData)(void *))
+void queueFree(Queue *q, void freeData(void *))
 {
-	if (freeData)
-		while (!queueIsEmpty(q))
-			freeData(queuePop(q));
+	circularListFree(q->cl, freeData);
+	free(q);
 }
 
-list *queueToList(queue *q)
+circularList *queueToCircularList(Queue *q)
 {
-	return q->start;
+	return q->cl;
 }
