@@ -2,6 +2,8 @@
 	Libraries in this file:
 	- vector
 	- stack
+	- heap
+	- priority queue
 	- list
 	- circular list
 	- queue
@@ -39,9 +41,13 @@ typedef enum {
 } Result;
 
 /*********************************************
-                    Vector
+
+
+                Vector - HEADER
+
+
 **********************************************/
-#define MIN_VECTOR_CAPACITY 4
+#define MIN_VECTOR_CAPACITY 0
 
 typedef struct {
 	void **data;
@@ -85,12 +91,16 @@ void vecForEachRange(const Vector *v, const i64 start, const i64 end, const i64 
 void vecPrint(const Vector *v, void printData(const void *));
 
 /*********************************************
-                    Stack
+
+
+                Stack - HEADER
+
+
 **********************************************/
 
 typedef Vector Stack;
 
-#define MIN_STACK_CAPACITY 4
+#define MIN_STACK_CAPACITY 0
 
 Stack *newStack();
 Stack *newStackWithCapacity(const u64 capacity);
@@ -105,7 +115,63 @@ void stackFree(Stack *s, void freeData(void *));
 void stackPrint(const Vector *v, void printData(const void *));
 
 /*********************************************
-                    List
+
+
+                Heap - HEADER
+
+
+**********************************************/
+
+#define MIN_HEAP_CAPACITY 0
+
+typedef struct {
+	void **vec;
+	u64 size;
+	u64 capacity;
+	int (*cmp)(const void *, const void *);
+} Heap;
+
+Heap *newHeap(int cmp(const void *, const void *));
+Heap *newHeapWithCapacity(int cmp(const void *, const void *), const u64 initialCapacity);
+void heapPush(Heap *h, void *data);
+const void *heapPeek(const Heap *h);
+void *heapPop(Heap *h);
+u64 heapSize(const Heap *h);
+bool heapIsEmpty(const Heap *h);
+void heapShrinkToFit(Heap *h);
+void heapClear(Heap *h, void freeData(void *));
+void heapFree(Heap *h, void freeData(void *));
+
+/*********************************************
+
+
+            Priority Queue - HEADER
+
+
+**********************************************/
+
+#define MIN_PRIORITY_QUEUE_CAPACITY 16
+
+typedef Heap PriorityQueue;
+
+PriorityQueue *newPriorityQueue(int cmp(const void *, const void *));
+PriorityQueue *newPriorityQueueWithCapacity(int cmp(const void *, const void *), const u64 initialCapacity);
+void priorityQueuePush(PriorityQueue *q, void *data);
+void *priorityQueuePop(PriorityQueue *q);
+const void *priorityQueuePeek(const PriorityQueue *q);
+u64 priorityQueueGetSize(const PriorityQueue *q);
+bool priorityQueueIsEmpty(const PriorityQueue *q);
+void priorityQueueShrinkToFit(PriorityQueue *q);
+void priorityQueueClear(PriorityQueue *q, void freeData(void *));
+void priorityQueueFree(PriorityQueue *q, void freeData(void *));
+
+
+/*********************************************
+
+
+                List - HEADER
+
+
 **********************************************/
 
 typedef struct List{
@@ -118,14 +184,18 @@ void listPush(List **m, void *data);
 void *listPop(List **m);
 void listInsertAfter(List *l, void *data);
 void *listRemoveAfter(List *l);
-void listFree(List *m, void (*freeData)(void *));
+void listFree(List *m, void freeData(void *));
 void listInsertEnd(List *l, void *data);
-void listPrint(const List *l, void (*printData)(const void*));
+void listPrint(const List *l, void printData(const void*));
 const List *listGetLast(const List *l);
 void listReverse(List **lst);
 
 /*********************************************
-                 Circular list
+
+
+            Circular list - HEADER
+
+
 **********************************************/
 
 typedef struct circularList {
@@ -143,7 +213,11 @@ void circularListFree(circularList *cl, void freeData(void *));
 void circularListPrint(circularList *cl, void printData(const void *));
 
 /*********************************************
-                 Queue
+
+
+                Queue - HEADER
+
+
 **********************************************/
 
 typedef struct {
@@ -163,17 +237,26 @@ void queueFree(Queue *q, void freeData(void *));
 circularList *queueToCircularList(Queue *q);
 
 /*********************************************
-                    String
+
+
+                String - HEADER
+
+
 **********************************************/
 
 u64 getFileSize(FILE *fp);
 i32 getFmtSize(const char *fmt, ...);
 i32 getFmtSizeVa(const char *fmt, va_list ap);
 void *memdup(const void *mem, const size_t size);
+void swap(void *a, void *b, const size_t size);
 
 
 /*********************************************
-                    Cursor
+
+
+                Cursor - HEADER
+
+
 **********************************************/
 #define CTRL_KEY(k) ((k) & 0x1f)
 
@@ -269,7 +352,11 @@ int readKey();
 
 
 /*********************************************
-                    Path
+
+
+                 Path - HEADER
+
+
 **********************************************/
 
 #include <dirent.h>
@@ -308,13 +395,21 @@ int getFmtSize(const char *fmt, ...);
 int getFmtSizeVa(const char *fmt, va_list ap);
 size_t getFileSize(FILE *fp);
 
-//
-//
-////   end header file   /////////////////////////////////////////////////////
+/*============================================
+
+
+                -End-Headers-
+
+
+=============================================*/
 #ifdef LIBZATAR_IMPL
 
 /*********************************************
-            Vector IMPLEMENTATION
+
+
+             Vector IMPLEMENTATION
+
+
 **********************************************/
 typedef struct {
 	i64 start;
@@ -434,9 +529,7 @@ void *vecReplace(Vector *v, const u64 i, void *data)
 
 void vecSwap(Vector *v, const u64 i, const u64 j)
 {
-	void *tmp = v->data[i];
-	v->data[i] = v->data[j];
-	v->data[j] = tmp;
+	swap(&v->data[i], &v->data[j], sizeof(void *));
 }
 
 void vecRemoveRange(Vector *v, const i64 start, const i64 end, const i64 step, void freeData(void *))
@@ -445,7 +538,7 @@ void vecRemoveRange(Vector *v, const i64 start, const i64 end, const i64 step, v
 	VecIter vi = newVecIter(v, start, end, step);
 
 	for (i64 i = VecIterBegin(&vi); VecIterIsEnd(&vi); i = VecIterNext(&vi)) {
-		if (freeData != NULL)
+		if (freeData)
 			freeData(vecReplace(v, i, &tmpPtr));
 		else
 			vecReplace(v, i, &tmpPtr);
@@ -517,7 +610,7 @@ void vecShrinkToFit(Vector *v)
 
 void vecClear(Vector *v, void freeData(void *))
 {
-	if (freeData != NULL)
+	if (freeData)
 		for (u64 i = 0; i < vecSize(v); i++)
 			freeData((void *)vecAt(v, i));
 	v->size = 0;
@@ -525,7 +618,7 @@ void vecClear(Vector *v, void freeData(void *))
 
 void vecFree(Vector *v, void freeData(void *))
 {
-	if (freeData != NULL)
+	if (freeData)
 		for (u64 i = 0; i < vecSize(v); i++)
 			freeData((void *)vecAt(v, i));
 
@@ -562,7 +655,7 @@ void vecReduce(Vector *v, bool shouldRemove(const void *, i64 i), void freeData(
 		void *currData = (void *)vecAt(v, i);
 		if (!shouldRemove(currData, i))
 			vecAdd(tmp, currData);
-		else if (freeData != NULL)
+		else if (freeData)
 			freeData(currData);
 	}
 	vecFree(v, NULL);
@@ -616,7 +709,11 @@ void vecPrint(const Vector *v, void printData(const void *))
 }
 
 /*********************************************
-            Stack IMPLEMENTATION
+
+
+              Stack IMPLEMENTATION
+
+
 **********************************************/
 
 Stack *newStack()
@@ -674,9 +771,210 @@ void stackPrint(const Stack *s, void printData(const void *))
 	vecPrint(s, printData);
 }
 
+/*********************************************
+
+
+			 Heap IMPLEMENTATION
+
+
+**********************************************/
+
+u64 parent(u64 i);
+u64 right(u64 i);
+u64 left(u64 i);
+void heapifyUp(Heap *h, u64 i);
+void heapifyDown(Heap *h, u64 i);
+
+Heap *newHeapWithCapacity(int cmp(const void *, const void *), const u64 initialCapacity)
+{
+	Heap *h = malloc(sizeof(Heap));
+	h->size = 0;
+	h->capacity = initialCapacity;
+	h->vec = malloc(sizeof(void*) * h->capacity);
+	h->cmp = cmp;
+
+	return h;
+}
+
+Heap *newHeap(int cmp(const void *, const void *))
+{
+	return newHeapWithCapacity(cmp, MIN_HEAP_CAPACITY);
+}
+
+u64 parent(u64 i)
+{
+	return i / 2;
+}
+
+u64 right(u64 i)
+{
+	return (i * 2) + 2;
+}
+
+u64 left(u64 i)
+{
+	return (i * 2) + 1;
+}
+
+void heapifyUp(Heap *h, u64 i)
+{
+	if (i == 0) {
+		return;
+	}
+
+	if (h->cmp(h->vec[parent(i)], h->vec[i]) > 0) {
+		swap(&h->vec[i], &h->vec[parent(i)], sizeof(void*));
+		heapifyUp(h, parent(i));
+	}
+}
+
+void heapifyDown(Heap *h, u64 i)
+{
+	u64 l = left(i);
+	u64 r = right(i);
+
+	u64 largest = i;
+
+	if (l < h->size && h->cmp(h->vec[i], h->vec[l]) > 0) {
+		largest = l;
+	}
+
+	if (r < h->size && h->cmp(h->vec[largest], h->vec[r]) > 0) {
+		largest = r;
+	}
+
+	if (largest != i) {
+		swap(&h->vec[i], &h->vec[largest], sizeof(void*));
+		heapifyDown(h, largest);
+	}
+}
+
+void heapPush(Heap *h, void *data)
+{
+	h->size++;
+
+	if (h->size > h->capacity) {
+		h->capacity *= 2;
+		h->vec = realloc(h->vec, sizeof(void*) * h->capacity);
+	}
+
+	h->vec[h->size - 1] = data;
+	heapifyUp(h, h->size - 1);
+}
+
+const void *heapPeek(const Heap *h)
+{
+	return h->vec[0];
+}
+
+void *heapPop(Heap *h)
+{
+	void *ret = h->vec[0];
+	h->vec[0] = h->vec[--h->size];
+	heapifyDown(h, 0);
+
+	return ret;
+}
+
+u64 heapSize(const Heap *h)
+{
+	return h->size;
+}
+
+bool heapIsEmpty(const Heap *h)
+{
+	return heapSize(h) == 0;
+}
+
+void heapShrinkToFit(Heap *h)
+{
+	h->capacity = h->size;
+	h->vec = realloc(h->vec, sizeof(void*) * h->capacity);
+}
+
+void heapClear(Heap *h, void freeData(void *))
+{
+	if (freeData) {
+		for (u64 i = 0; i < h->size; i++) {
+			freeData(h->vec[i]);
+		}
+	}
+
+	h->size = 0;
+}
+
+void heapFree(Heap *h, void freeData(void *))
+{
+	heapClear(h, freeData);
+	free(h->vec);
+	free(h);
+}
 
 /*********************************************
-        List IMPLEMENTATION
+
+
+			 Priority Queue IMPLEMENTATION
+
+
+**********************************************/
+
+PriorityQueue *newPriorityQueueWithCapacity(int cmp(const void *, const void *), const u64 initialCapacity)
+{
+	return newHeapWithCapacity(cmp, initialCapacity);
+}
+
+PriorityQueue *newPriorityQueue(int cmp(const void *, const void *))
+{
+	return newHeapWithCapacity(cmp, MIN_PRIORITY_QUEUE_CAPACITY);
+}
+
+void priorityQueuePush(PriorityQueue *q, void *data)
+{
+	heapPush(q, data);
+}
+
+void *priorityQueuePop(PriorityQueue *q)
+{
+	return heapPop(q);
+}
+
+const void *priorityQueuePeek(const PriorityQueue *q)
+{
+	return heapPeek(q);
+}
+
+u64 priorityQueueGetSize(const PriorityQueue *q)
+{
+	return heapSize(q);
+}
+
+bool priorityQueueIsEmpty(const PriorityQueue *q)
+{
+	return heapIsEmpty(q);
+}
+
+void priorityQueueShrinkToFit(PriorityQueue *q)
+{
+	heapShrinkToFit(q);
+}
+
+void priorityQueueClear(PriorityQueue *q, void freeData(void *))
+{
+	heapClear(q, freeData);
+}
+
+void priorityQueueFree(PriorityQueue *q, void freeData(void *))
+{
+	heapFree(q, freeData);
+}
+
+
+/*********************************************
+
+
+			 List IMPLEMENTATION
+
+
 **********************************************/
 
 List *newList()
@@ -715,15 +1013,17 @@ void *listRemoveAfter(List *l)
 	void *data = tmp->data;
 	l->next = l->next->next;
 	free(tmp);
+
 	return data;
 }
 
-void listFree(List *m, void (*freeData)(void *))
+void listFree(List *m, void freeData(void *))
 {
-	while (m != NULL) {
+	while (m) {
 		void *tmp = listPop(&m);
-		if (freeData)
+		if (freeData) {
 			freeData(tmp);
+		}
 	}
 }
 
@@ -732,7 +1032,7 @@ void listInsertEnd(List *l, void *data)
 	listInsertAfter((List *)listGetLast(l), data);
 }
 
-void listPrint(const List *l, void (*printData)(const void *))
+void listPrint(const List *l, void printData(const void *))
 {
 	while (l) {
 		printData(l->data);
@@ -742,8 +1042,10 @@ void listPrint(const List *l, void (*printData)(const void *))
 
 const List *listGetLast(const List *l)
 {
-	while (l->next)
+	while (l->next) {
 		l =  l->next;
+	}
+
 	return l;
 }
 
@@ -752,7 +1054,7 @@ void listReverse(List **lst)
 	List *right = *lst;
 	List *left = *lst;
 
-	while (right->next != NULL) {
+	while (right->next) {
 		void *tmp = listRemoveAfter(right);
 		listPush(&left, tmp);
 	}
@@ -762,7 +1064,11 @@ void listReverse(List **lst)
 
 
 /*********************************************
-        Circular List IMPLEMENTATION
+
+
+         Circular List IMPLEMENTATION
+
+
 **********************************************/
 circularList *newCircularList()
 {
@@ -841,11 +1147,11 @@ void circularListInsertLast(circularList **cl, void *data)
 void circularListFree(circularList *cl, void freeData(void *))
 {
 	if (freeData) {
-		while (cl != NULL) {
+		while (cl) {
 			freeData(circularListPop(&cl));
 		}
 	} else {
-		while (cl != NULL) {
+		while (cl) {
 			circularListPop(&cl);
 		}
 	}
@@ -871,7 +1177,11 @@ void circularListPrint(circularList *cl, void printData(const void *))
 }
 
 /*********************************************
-			Queue IMPLEMENTATION
+
+
+			  Queue IMPLEMENTATION
+
+
 **********************************************/
 
 Queue *newQueue()
@@ -934,7 +1244,11 @@ circularList *queueToCircularList(Queue *q)
 }
 
 /*********************************************
-            Cursor IMPLEMENTATION
+
+
+             Cursor IMPLEMENTATION
+
+
 **********************************************/
 #include <termios.h>
 #include <unistd.h>
@@ -1175,7 +1489,11 @@ int readKey()
 }
 
 /*********************************************
-            Path IMPLEMENTATION
+
+
+             Path IMPLEMENTATION
+
+
 **********************************************/
 
 #include <sys/stat.h>
@@ -1254,7 +1572,7 @@ Result dirTraverse(const char *dir, bool (*action)(const char *))
 		return Err;
 	}
 
-	while ((de = readdir(dr)) != NULL) {
+	while ((de = readdir(dr))) {
 
 		const char *file = de->d_name;
 		char fullPath[PATH_MAX];
@@ -1424,8 +1742,21 @@ Result popen2(char *path, char *argv[], FILE *ppipe[2])
 }
 
 /*********************************************
-                String IMPLEMENTATION
+
+
+              String IMPLEMENTATION
+
+
 **********************************************/
+
+
+void swap(void *a, void *b, const size_t size)
+{
+	char tmp[size];
+	memcpy(tmp, a, size);
+	memcpy(a, b, size);
+	memcpy(b, tmp, size);
+}
 
 size_t getFileSize(FILE *fp)
 {
@@ -1468,5 +1799,12 @@ void *memdup(const void *mem, const size_t size)
 }
 
 
+/*============================================
+
+
+             -End-Implementation-
+
+
+=============================================*/
 #endif // LIBZATAR_IMPL
 #endif // LIBZATRAR_h

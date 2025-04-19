@@ -9,17 +9,17 @@ typedef struct {
 	size_t size;
 	size_t capacity;
 	int (*cmp)(const void *, const void *);
-} heap;
+} Heap;
 
-heap newHeap(int (*cmp)(const void *, const void *));
-heap newHeapWithCapacity(int (*cmp)(const void *, const void *), const size_t initialCapacity);
-void heapPush(heap *h, void *data);
-const void *heapPeek(const heap *h);
-void *heapPop(heap *h);
-size_t heapGetSize(const heap *h);
-bool heapIsEmpty(const heap *h);
-void heapShrinkToFit(heap *h);
-void heapClear(heap *h, void (*freeData)(void *));
-void heapFree(heap *h, void (*freeData)(void *));
+Heap *newHeap(int cmp)(const void *, const void *));
+Heap  *newHeapWithCapacity(int cmp(const void *, const void *), const size_t initialCapacity);
+void heapPush(Heap *h, void *data);
+const void *heapPeek(const Heap *h);
+void *heapPop(Heap *h);
+size_t heapGetSize(const Heap *h);
+bool heapIsEmpty(const Heap *h);
+void heapShrinkToFit(Heap *h);
+void heapClear(Heap *h, void freeData(void *));
+void heapFree(Heap *h, void freeData(void *));
 
 #endif
