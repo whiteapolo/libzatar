@@ -1,15 +1,21 @@
-/*  libzatar
+/*
+           Libzatar
+
 	Libraries in this file:
-	- vector
-	- stack
-	- heap
-	- priority queue
-	- list
-	- circular list
-	- queue
-	- path
-	- cursor
+		- path
+		- cursor
+
+	Data Structures:
+		- Vector
+		- Stack
+		- Heap
+		- PriorityQueue
+		- List
+		- CircularList
+		- Queue
 */
+
+// TODO: circular list to camel case
 
 #ifndef LIBZATAR_H
 #define LIBZATAR_H
