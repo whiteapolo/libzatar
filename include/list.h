@@ -2,20 +2,20 @@
 #define LLL_H
 #include "shared.h"
 
-typedef struct list{
-	struct list *next;
+typedef struct List{
+	struct List *next;
 	void *data;
-} list;
+} List;
 
-list *newList();
-void listPush(list **m, void *data);
-void *listPop(list **m);
-void listInsertAfter(list *l, void *data);
-void *listRemoveAfter(list *l);
-void listFree(list *m, void (*freeData)(void *));
-void listInsertEnd(list *l, void *data);
-void listPrint(const list *l, void (*printData)(const void*));
-const list *listGetLast(const list *l);
-void listReverse(list **lst);
+List *newList();
+void listPush(List **m, void *data);
+void *listPop(List **m);
+void listInsertAfter(List *l, void *data);
+void *listRemoveAfter(List *l);
+void listFree(List *m, void (*freeData)(void *));
+void listInsertEnd(List *l, void *data);
+void listPrint(const List *l, void (*printData)(const void*));
+const List *listGetLast(const List *l);
+void listReverse(List **lst);
 
 #endif

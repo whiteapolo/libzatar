@@ -16,7 +16,7 @@ int main(void)
 		queuePush(q, DUP(i));
 	}
 
-	printf("%d\n", queueSize(q));
+	printf("%lu\n", queueSize(q));
 
 	queuePrint(q, printInt);
 

@@ -1,45 +1,45 @@
 #include "list.h"
 
-list *newList()
+List *newList()
 {
 	return NULL;
 }
 
-void listPush(list **m, void *data)
+void listPush(List **m, void *data)
 {
-	list *n = malloc(sizeof(list));
+	List *n = malloc(sizeof(List));
 	n->next = *m;
 	n->data = data;
 	*m = n;
 }
 
-void *listPop(list **m)
+void *listPop(List **m)
 {
 	void *data = (*m)->data;
-	list *tmp = *m;
+	List *tmp = *m;
 	*m = (*m)->next;
 	free(tmp);
 	return data;
 }
 
-void listInsertAfter(list *l, void *data)
+void listInsertAfter(List *l, void *data)
 {
-	list *n = malloc(sizeof(list));
+	List *n = malloc(sizeof(List));
 	n->next = l->next;
 	n->data = data;
 	l->next = n;
 }
 
-void *listRemoveAfter(list *l)
+void *listRemoveAfter(List *l)
 {
-	list *tmp = l->next;
+	List *tmp = l->next;
 	void *data = tmp->data;
 	l->next = l->next->next;
 	free(tmp);
 	return data;
 }
 
-void listFree(list *m, void (*freeData)(void *))
+void listFree(List *m, void (*freeData)(void *))
 {
 	while (m != NULL) {
 		void *tmp = listPop(&m);
@@ -48,12 +48,12 @@ void listFree(list *m, void (*freeData)(void *))
 	}
 }
 
-void listInsertEnd(list *l, void *data)
+void listInsertEnd(List *l, void *data)
 {
-	listInsertAfter((list *)listGetLast(l), data);
+	listInsertAfter((List *)listGetLast(l), data);
 }
 
-void listPrint(const list *l, void (*printData)(const void *))
+void listPrint(const List *l, void (*printData)(const void *))
 {
 	while (l) {
 		printData(l->data);
@@ -61,17 +61,17 @@ void listPrint(const list *l, void (*printData)(const void *))
 	}
 }
 
-const list *listGetLast(const list *l)
+const List *listGetLast(const List *l)
 {
 	while (l->next)
 		l =  l->next;
 	return l;
 }
 
-void listReverse(list **lst)
+void listReverse(List **lst)
 {
-	list *right = *lst;
-	list *left = *lst;
+	List *right = *lst;
+	List *left = *lst;
 
 	while (right->next != NULL) {
 		void *tmp = listRemoveAfter(right);
