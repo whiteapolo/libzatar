@@ -1,5 +1,7 @@
 /*  libzatar
 	Libraries in this file:
+	- vector
+	- stack
 	- path
 	- cursor
 */
@@ -8,6 +10,7 @@
 #define LIBZATAR_H
 
 #include <stdint.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +34,72 @@ typedef enum {
 	Ok = 0,
 	Err = -1,
 } Result;
+
+/*********************************************
+                    Vector
+**********************************************/
+#define MIN_VECTOR_CAPACITY 4
+
+typedef struct {
+	void **data;
+	u64 size;
+	u64 capacity;
+} Vector;
+
+Vector *newVecWithCapacity(const u64 initialCapacity);
+Vector *newVec();
+
+const void *vecAt(const Vector *v, const u64 i);
+u64 vecSize(const Vector *v);
+bool vecIsEmpty(const Vector *v);
+
+void vecAdd(Vector *v, void *data);
+void *vecRemoveLast(Vector *v);
+void vecInsertAt(Vector *v, u64 i, void *data);
+void *vecRemoveAt(Vector *v, u64 i);
+
+void *vecReplace(Vector *v, const u64 i, void *data);
+void vecSwap(Vector *v, const u64 i, const u64 j);
+void vecRemoveRange(Vector *v, const i64 start, const i64 end, const i64 step, void freeData(void *));
+void vecAddVec(Vector *dst, Vector *src);
+void vecAddVecAt(Vector *dest, const u64 i, Vector *src);
+
+Vector *vecClone(const Vector *v, void *dupData(const void *));
+Vector *vecCloneRange(const Vector *v, const i64 start, const i64 end, const i64 step, void *dupData(const void *));
+void vecShrinkToFit(Vector *v);
+
+void vecClear(Vector *v, void freeData(void *));
+void vecFree(Vector *v, void freeData(void *));
+
+void vecSort(Vector *v, int cmp(const void *, const void *));
+void vecReverse(Vector *v);
+void vecShuffle(Vector *v);
+void vecReduce(Vector *v, bool shouldRemove(const void *, i64 i), void freeData(void *));
+void vecMap(Vector *v, void *transform(const void *));
+void vecMapRange(Vector *v, const i64 start, const i64 end, const i64 step, void *transform(const void *));
+void vecForEach(const Vector *v, void action(const void *));
+void vecForEachRange(const Vector *v, const i64 start, const i64 end, const i64 step, void action(const void *));
+void vecPrint(const Vector *v, void printData(const void *));
+
+/*********************************************
+                    Stack
+**********************************************/
+
+typedef Vector Stack;
+
+#define MIN_STACK_CAPACITY 4
+
+Stack *newStack();
+Stack *newStackWithCapacity(const u64 capacity);
+void stackPush(Stack *s, void *data);
+void *stackPop(Stack *s);
+const void *stackTop(const Stack *s);
+u64 stackSize(const Stack *s);
+bool stackIsEmpty(const Stack *s);
+void stackShrinkToFit(Stack *s);
+void stackClear(Stack *s, void freeData(void *));
+void stackFree(Stack *s, void freeData(void *));
+void stackPrint(const Vector *v, void printData(const void *));
 
 /*********************************************
                     String
@@ -183,7 +252,368 @@ size_t getFileSize(FILE *fp);
 #ifdef LIBZATAR_IMPL
 
 /*********************************************
-                 Cursor
+            Vector IMPLEMENTATION
+**********************************************/
+typedef struct {
+	i64 start;
+	i64 step;
+	i64 end;
+	i64 i;
+} VecIter;
+
+VecIter newVecIter(const Vector *v, const i64 start, const i64 end, const i64 step)
+{
+	assert(step != 0);
+
+	VecIter vi = {
+		.start = start,
+		.end = end,
+		.step = step,
+	};
+
+	// wrap negative values to the end of the array
+	if (vi.start < 0)
+		vi.start += vecSize(v);
+	if (vi.end < 0)
+		vi.end += vecSize(v);
+	return vi;
+}
+
+i64 VecIterBegin(VecIter *vi)
+{
+	vi->i = vi->start;
+	return vi->i;
+}
+
+i64 VecIterNext(VecIter *vi)
+{
+	vi->i += vi->step;
+	return vi->i;
+}
+
+bool VecIterIsEnd(const VecIter *vi)
+{
+	if (vi->step > 0 && vi->i > vi->end)
+		return true;
+	if (vi->step < 0 && vi->i < vi->end)
+		return true;
+	return false;
+}
+
+Vector *newVecWithCapacity(const u64 initialCapacity)
+{
+	Vector *v = malloc(sizeof(Vector));
+	v->size = 0;
+	v->capacity = initialCapacity;
+	v->data = malloc(sizeof(void *) * initialCapacity);
+
+	return v;
+}
+
+Vector *newVec()
+{
+	return newVecWithCapacity(MIN_VECTOR_CAPACITY);
+}
+
+const void *vecAt(const Vector *v, const u64 i)
+{
+	assert(i < v->size);
+
+	return v->data[i];
+}
+
+void vecAdd(Vector *v, void *data)
+{
+	v->size++;
+
+	if (v->size > v->capacity) {
+		v->capacity *= 2;
+		v->data = realloc(v->data, sizeof(void *) * v->capacity);
+	}
+
+	v->data[v->size - 1] = data;
+}
+
+void *vecRemoveLast(Vector *v)
+{
+	return v->data[--v->size];
+}
+
+void vecInsertAt(Vector *v, u64 i, void *data)
+{
+	assert(i <= v->size);
+	v->size++;
+
+	if (v->size > v->capacity) {
+		v->capacity *= 2;
+		v->data = realloc(v->data, sizeof(void *) * v->capacity);
+	}
+
+	memmove(&v->data[i+1], &v->data[i], sizeof(void *) * (v->size - i - 1));
+	v->data[i] = data;
+}
+
+void *vecRemoveAt(Vector *v, u64 i)
+{
+	assert(i < v->size);
+	void *dataToRemove = v->data[i];
+	memmove(&v->data[i], &v->data[i+1], sizeof(void *) * (v->size - i - 1));
+	v->size--;
+
+	return dataToRemove;
+}
+
+void *vecReplace(Vector *v, const u64 i, void *data)
+{
+	void *tmp = v->data[i];
+	v->data[i] = data;
+	return tmp;
+}
+
+void vecSwap(Vector *v, const u64 i, const u64 j)
+{
+	void *tmp = v->data[i];
+	v->data[i] = v->data[j];
+	v->data[j] = tmp;
+}
+
+void vecRemoveRange(Vector *v, const i64 start, const i64 end, const i64 step, void freeData(void *))
+{
+	u8 tmpPtr;
+	VecIter vi = newVecIter(v, start, end, step);
+
+	for (i64 i = VecIterBegin(&vi); VecIterIsEnd(&vi); i = VecIterNext(&vi)) {
+		if (freeData != NULL)
+			freeData(vecReplace(v, i, &tmpPtr));
+		else
+			vecReplace(v, i, &tmpPtr);
+	}
+
+	Vector *tmp = newVecWithCapacity(vecSize(v));
+	for (u64 i = 0; i < vecSize(v); i++)
+		vecAdd(tmp, (void *)vecAt(v, i));
+	vecFree(v, NULL);
+	*v = *tmp;
+}
+
+void vecAddVec(Vector *dst, Vector *src)
+{
+	for (u64 i = 0; i < vecSize(src); i++)
+		vecAdd(dst, (void *)vecAt(src, i));
+	vecFree(src, NULL);
+}
+
+void vecAddVecAt(Vector *dest, const u64 i, Vector *src)
+{
+	const u64 oldDestSize = dest->size;
+	dest->size += src->size;
+
+	if (dest->size > dest->capacity) {
+		dest->capacity = dest->size * 2;
+		dest->data = realloc(dest->data, sizeof(void *) * dest->capacity);
+	}
+
+	memmove(&dest->data[i + src->size], &dest->data[i], sizeof(void *) * (oldDestSize - i));
+	memcpy(&dest->data[i], &src->data[0], src->size);
+	vecFree(src, NULL);
+}
+
+u64 vecSize(const Vector *v)
+{
+	return v->size;
+}
+
+bool vecIsEmpty(const Vector *v)
+{
+	return vecSize(v) == 0;
+}
+
+Vector *vecClone(const Vector *v, void *dupData(const void *))
+{
+	Vector *new = newVecWithCapacity(vecSize(v));
+	for (u64 i = 0; i < vecSize(v); i++)
+		vecAdd(new, dupData(vecAt(v, i)));
+	return new;
+}
+
+Vector *vecCloneRange(const Vector *v, const i64 start, const i64 end, const i64 step, void *dupData(const void *))
+{
+	Vector *clone = newVecWithCapacity(vecSize(v));
+	VecIter vi = newVecIter(v, start, end, step);
+
+	for (i64 i = VecIterBegin(&vi); VecIterIsEnd(&vi); i = VecIterNext(&vi))
+		vecAdd(clone, dupData(vecAt(v, i)));
+
+	return clone;
+}
+
+void vecShrinkToFit(Vector *v)
+{
+	v->capacity = v->size;
+	v->data = realloc(v->data, sizeof(void *) * v->capacity);
+}
+
+void vecClear(Vector *v, void freeData(void *))
+{
+	if (freeData != NULL)
+		for (u64 i = 0; i < vecSize(v); i++)
+			freeData((void *)vecAt(v, i));
+	v->size = 0;
+}
+
+void vecFree(Vector *v, void freeData(void *))
+{
+	if (freeData != NULL)
+		for (u64 i = 0; i < vecSize(v); i++)
+			freeData((void *)vecAt(v, i));
+
+	free(v->data);
+	free(v);
+}
+
+void vecSort(Vector *v, int cmp(const void *, const void *))
+{
+	qsort(v->data, v->size, sizeof(void *), cmp);
+}
+
+void vecReverse(Vector *v)
+{
+	u64 start = 0;
+	u64 end = vecSize(v) - 1;
+
+	while (start < end)
+		vecSwap(v, start++, end--);
+}
+
+void vecShuffle(Vector *v)
+{
+	for (u64 i = 0; i < vecSize(v); i++) {
+		const i64 j = rand() % vecSize(v);
+		vecSwap(v, i, j);
+	}
+}
+
+void vecReduce(Vector *v, bool shouldRemove(const void *, i64 i), void freeData(void *))
+{
+	Vector *tmp = newVecWithCapacity(v->capacity);
+	for (u64 i = 0; i < vecSize(v); i++) {
+		void *currData = (void *)vecAt(v, i);
+		if (!shouldRemove(currData, i))
+			vecAdd(tmp, currData);
+		else if (freeData != NULL)
+			freeData(currData);
+	}
+	vecFree(v, NULL);
+	*v = *tmp;
+}
+
+void vecMap(Vector *v, void *transform(const void *))
+{
+	for (u64 i = 0; i < vecSize(v); i++)
+		vecReplace(v, i, transform(vecAt(v, i)));
+}
+
+void vecMapRange(Vector *v, const i64 start, const i64 end, const i64 step, void *transform(const void *))
+{
+	VecIter vi = newVecIter(v, start, end, step);
+	for (i64 i = VecIterBegin(&vi); VecIterIsEnd(&vi); i = VecIterNext(&vi))
+		vecReplace(v, i, transform(vecAt(v, i)));
+}
+
+void vecForEach(const Vector *v, void action(const void *))
+{
+	for (u64 i = 0; i < vecSize(v); i++)
+		action(vecAt(v, i));
+}
+
+void vecForEachRange(const Vector *v, const i64 start, const i64 end, const i64 step, void action(const void *))
+{
+	VecIter vi = newVecIter(v, start, end, step);
+	for (i64 i = VecIterBegin(&vi); VecIterIsEnd(&vi); i = VecIterNext(&vi))
+		action(vecAt(v, i));
+}
+
+void vecPrint(const Vector *v, void printData(const void *))
+{
+	if (v->size == 0) {
+		printf("[]\n");
+		return;
+	}
+
+	printf("[ ");
+
+	for (u64 i = 0; i < v->size - 1; i++) {
+		printData(v->data[i]);
+		printf(", ");
+	}
+
+	printData(v->data[v->size - 1]);
+
+
+	printf(" ]\n");
+}
+
+/*********************************************
+            Stack IMPLEMENTATION
+**********************************************/
+
+Stack *newStack()
+{
+	return newStackWithCapacity(MIN_STACK_CAPACITY);
+}
+
+Stack *newStackWithCapacity(const u64 capacity)
+{
+	return newVecWithCapacity(capacity);
+}
+
+void stackPush(Stack *s, void *data)
+{
+	vecAdd(s, data);
+}
+
+void *stackPop(Stack *s)
+{
+	return vecRemoveLast(s);
+}
+
+const void *stackTop(const Stack *s)
+{
+	return vecAt(s, vecSize(s) - 1);
+}
+
+u64 stackSize(const Stack *s)
+{
+	return vecSize(s);
+}
+
+bool stackIsEmpty(const Stack *s)
+{
+	return vecIsEmpty(s);
+}
+
+void stackShrinkToFit(Stack *s)
+{
+	vecShrinkToFit(s);
+}
+
+void stackClear(Stack *s, void freeData(void *))
+{
+	vecClear(s, freeData);
+}
+
+void stackFree(Stack *s, void freeData(void *))
+{
+	vecFree(s, freeData);
+}
+
+void stackPrint(const Stack *s, void printData(const void *))
+{
+	vecPrint(s, printData);
+}
+
+/*********************************************
+            Cursor IMPLEMENTATION
 **********************************************/
 #include <termios.h>
 #include <unistd.h>
