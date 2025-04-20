@@ -55,46 +55,47 @@ typedef enum {
 **********************************************/
 #define MIN_VECTOR_CAPACITY 0
 
-typedef struct {
-	void **data;
-	u64 size;
-	u64 capacity;
-} Vector;
-
-Vector *newVecWithCapacity(const u64 initialCapacity);
-Vector *newVec();
-
-const void *vecAt(const Vector *v, const u64 i);
-u64 vecSize(const Vector *v);
-bool vecIsEmpty(const Vector *v);
-
-void vecAdd(Vector *v, void *data);
-void *vecRemoveLast(Vector *v);
-void vecInsertAt(Vector *v, u64 i, void *data);
-void *vecRemoveAt(Vector *v, u64 i);
-
-void *vecReplace(Vector *v, const u64 i, void *data);
-void vecSwap(Vector *v, const u64 i, const u64 j);
-void vecRemoveRange(Vector *v, const i64 start, const i64 end, const i64 step, void freeData(void *));
-void vecAddVec(Vector *dst, Vector *src);
-void vecAddVecAt(Vector *dest, const u64 i, Vector *src);
-
-Vector *vecClone(const Vector *v, void *dupData(const void *));
-Vector *vecCloneRange(const Vector *v, const i64 start, const i64 end, const i64 step, void *dupData(const void *));
-void vecShrinkToFit(Vector *v);
-
-void vecClear(Vector *v, void freeData(void *));
-void vecFree(Vector *v, void freeData(void *));
-
-void vecSort(Vector *v, int cmp(const void *, const void *));
-void vecReverse(Vector *v);
-void vecShuffle(Vector *v);
-void vecReduce(Vector *v, bool shouldRemove(const void *, i64 i), void freeData(void *));
-void vecMap(Vector *v, void *transform(const void *));
-void vecMapRange(Vector *v, const i64 start, const i64 end, const i64 step, void *transform(const void *));
-void vecForEach(const Vector *v, void action(const void *));
-void vecForEachRange(const Vector *v, const i64 start, const i64 end, const i64 step, void action(const void *));
-void vecPrint(const Vector *v, void printData(const void *));
+#define VECTOR_HEADERS(type, name)                                                                               \
+	typedef struct {                                                                                             \
+		type *data;                                                                                              \
+		u64 size;                                                                                                \
+		u64 capacity;                                                                                            \
+	} name##Vector;                                                                                              \
+                                                                                                                 \
+	name##Vector *name##VecNewWithCapacity(u64 initialCapacity);                                                 \
+	name##Vector *name##VecNew();                                                                                \
+                                                                                                                 \
+	type name##VecAt(const name##Vector *v, u64 i);                                                              \
+	u64 name##VecSize(const name##Vector *v);                                                                    \
+	bool name##VecIsEmpty(const name##Vector *v);                                                                \
+                                                                                                                 \
+	void name##VecAdd(name##Vector *v, type data);                                                               \
+	type name##VecRemoveLast(name##Vector *v);                                                                   \
+	void name##VecInsertAt(name##Vector *v, u64 i, type data);                                                   \
+	type name##VecRemoveAt(name##Vector *v, u64 i);                                                              \
+                                                                                                                 \
+	type name##VecReplace(name##Vector *v, u64 i, type data);                                                    \
+	void name##VecSwap(name##Vector *v, u64 i, u64 j);                                                           \
+	void name##VecRemoveRange(name##Vector *v, i64 start, i64 end, i64 step, void freeData(type ));              \
+	void name##VecAddVec(name##Vector *dst, name##Vector *src);                                                  \
+	void name##VecAddVecAt(name##Vector *dest, u64 i, name##Vector *src);                                        \
+                                                                                                                 \
+	name##Vector *name##VecClone(const name##Vector *v, type dupData(type));                                     \
+	name##Vector *name##VecCloneRange(const name##Vector *v, i64 start, i64 end, i64 step, type dupData(type));  \
+	void name##VecShrinkToFit(name##Vector *v);                                                                  \
+                                                                                                                 \
+	void name##VecClear(name##Vector *v, void freeData(type ));                                                  \
+	void name##VecFree(name##Vector *v, void freeData(type ));                                                   \
+                                                                                                                 \
+	void name##VecSort(name##Vector *v, int cmp(type, type));                                                    \
+	void name##VecReverse(name##Vector *v);                                                                      \
+	void name##VecShuffle(name##Vector *v);                                                                      \
+	void name##VecReduce(name##Vector *v, bool shouldRemove(type, i64 i), void freeData(type ));                 \
+	void name##VecMap(name##Vector *v, type transform(type));                                                    \
+	void name##VecMapRange(name##Vector *v, i64 start, i64 end, i64 step, type transform(type));                 \
+	void name##VecForEach(const name##Vector *v, void action(type));                                             \
+	void name##VecForEachRange(const name##Vector *v, i64 start, i64 end, i64 step, void action(type));          \
+	void name##VecPrint(const name##Vector *v, void printData(type));
 
 /*********************************************
 
