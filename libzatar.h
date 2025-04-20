@@ -14,6 +14,7 @@
 		- CircularList
 		- Queue
 		- AvlTree
+		- Map
 */
 
 // TODO: circular list to camel case
@@ -272,8 +273,32 @@ void avlInsert(avlNode **root, void *key, void *data, int cmpKeys(const void *,c
 void avlRemove(avlNode **root, const void *key, int cmpKeys(const void *,const void *), void freeKey(void *), void freeData(void *));
 void avlUpdate(avlNode *root, const void *key, int cmpKeys(const void *,const void *), void freeData(void *), void *newData);
 void avlOrderTraverse(const avlNode *root, void action(const void *key, const void *data, void *arg), void *arg);
-void avlPrint(const avlNode *root, void print(const void *key, const void *data, void *arg), void *arg, const int padding);
+void avlPrint(const avlNode *root, void print(const void *key, const void *data, void *arg), void *arg, int padding);
 void avlFree(avlNode *root, void freeKey(void *), void freeData(void *));
+
+/*********************************************
+
+
+                Map - HEADER
+
+
+**********************************************/
+
+typedef struct {
+	avlNode *root;
+	int (*cmpKeys)(const void *, const void *);
+} Map;
+
+Map *newMap(int cmpKeys(const void *, const void *));
+void mapInsert(Map *m, void *key, void *data);
+void *mapFind(const Map *m, const void *key);
+bool mapIsExists(const Map *m, const void *key);
+void mapRemove(Map *m, const void *key, void freeKey(void *), void freeData(void *));
+void mapUpdate(Map *m, const void *key, void freeData(void *), void *newData);
+void mapOrderTraverse(const Map *m, void action(const void *key, const void *data, void *arg), void *arg);
+void mapFree(Map *m, void freeKey(void *), void freeData(void *));
+bool mapIsEmpty(const Map *m);
+
 
 /*********************************************
 
@@ -1410,7 +1435,7 @@ void avlInsert(avlNode **root, void *key, void *data, int cmpKeys(const void *,c
 	}
 
 	updateHeight(*root);
-	const int bf = getBalanceFactor(*root);
+	int bf = getBalanceFactor(*root);
 
 	if (bf > 1 && cmpKeys(key, (*root)->left->key) < 0)
 		rightRotate(root);
@@ -1495,13 +1520,13 @@ void avlOrderTraverse(const avlNode *root, void action(const void *key, const vo
     avlOrderTraverse(root->right, action, arg);
 }
 
-void printCharNTimes(const char c, const int n)
+void printCharNTimes(const char c, int n)
 {
 	for (int i = 0; i < n; i++)
 		putchar(c);
 }
 
-void avlPrint(const avlNode *root, void print(const void *key, const void *data, void *arg), void *arg, const int padding)
+void avlPrint(const avlNode *root, void print(const void *key, const void *data, void *arg), void *arg, int padding)
 {
 	if (root == NULL)
 		return;
@@ -1529,6 +1554,62 @@ void avlFree(avlNode *root, void freeKey(void *), void freeData(void *))
 	free(root);
 }
 
+/*********************************************
+
+
+             Map IMPLEMENTATION
+
+
+**********************************************/
+
+Map *newMap(int cmpKeys(const void *, const void *))
+{
+	Map *m = malloc(sizeof(Map));
+	m->cmpKeys = cmpKeys;
+	m->root = NULL;
+
+	return m;
+}
+
+void mapInsert(Map *m, void *key, void *data)
+{
+	avlInsert(&m->root, key, data, m->cmpKeys);
+}
+
+void *mapFind(const Map *m, const void *key)
+{
+	return avlFind(m->root, key, m->cmpKeys);
+}
+
+bool mapIsExists(const Map *m, const void *key)
+{
+	return avlIsExists(m->root, key, m->cmpKeys);
+}
+
+void mapRemove(Map *m, const void *key, void freeKey(void *), void freeData(void *))
+{
+	avlRemove(&m->root, key, m->cmpKeys, freeKey, freeData);
+}
+
+void mapUpdate(Map *m, const void *key, void freeData(void *), void *newData)
+{
+	avlUpdate(m->root, key, m->cmpKeys, freeData, newData);
+}
+
+void mapOrderTraverse(const Map *m, void action(const void *key, const void *data, void *arg), void *arg)
+{
+    avlOrderTraverse(m->root, action, arg);
+}
+
+bool mapIsEmpty(const Map *m)
+{
+    return m->root == NULL;
+}
+
+void mapFree(Map *m, void freeKey(void *), void freeData(void *))
+{
+	avlFree(m->root, freeKey, freeData);
+}
 
 /*********************************************
 
@@ -1827,17 +1908,17 @@ char *expandPath(const char *path)
 void compressPath(char *path)
 {
 	const char *home = getHomePath();
-	const int homeLen = strlen(home);
+	int homeLen = strlen(home);
 
 	if (strncmp(home, path, homeLen) == 0) {
-		const int bufLen = strlen(path) + homeLen;
+		int bufLen = strlen(path) + homeLen;
 		char buf[bufLen];
 		snprintf(buf, bufLen, "~%s", path + homeLen);
 		strncpy(path, buf, bufLen);
 	}
 }
 
-Result nextInDir(DIR *dir, const char *dirName, char *destFileName, const int destLen)
+Result nextInDir(DIR *dir, const char *dirName, char *destFileName, int destLen)
 {
 	struct dirent *de = readdir(dir);
 
@@ -1864,7 +1945,7 @@ Result dirTraverse(const char *dir, bool action(const char *))
 		const char *file = de->d_name;
 		char fullPath[PATH_MAX];
 
-		const int len = snprintf(fullPath, PATH_MAX, "%s/%s", dir, file);
+		int len = snprintf(fullPath, PATH_MAX, "%s/%s", dir, file);
 		fullPath[len] = '\0';
 
 		if (action(fullPath) == false) {
@@ -1974,7 +2055,7 @@ Result redirectFd(int srcFd, const char *destFileName)
 	return Ok;
 }
 
-Result traverseFile(const char *fileName, const int bufSize, bool action(char[bufSize]))
+Result traverseFile(const char *fileName, int bufSize, bool action(char[bufSize]))
 {
 	FILE *fp = fopen(fileName, "r");
 
@@ -2061,7 +2142,7 @@ int getFmtSize(const char *fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 
-	const int size = getFmtSizeVa(fmt, ap);
+	int size = getFmtSizeVa(fmt, ap);
 	va_end(ap);
 
 	return size;
@@ -2072,7 +2153,7 @@ int getFmtSizeVa(const char *fmt, va_list ap)
 	va_list ap1;
 	va_copy(ap1, ap);
 
-	const int size = vsnprintf(NULL, 0, fmt, ap1);
+	int size = vsnprintf(NULL, 0, fmt, ap1);
 	va_end(ap1);
 
 	return size;
