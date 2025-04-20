@@ -13,6 +13,7 @@
 		- List
 		- CircularList
 		- Queue
+		- AvlTree
 */
 
 // TODO: circular list to camel case
@@ -26,6 +27,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <dirent.h>
+#include <errno.h>
+#include <sys/types.h>
 
 typedef int8_t   i8;
 typedef int16_t  i16;
@@ -61,10 +65,10 @@ typedef struct {
 	u64 capacity;
 } Vector;
 
-Vector *newVecWithCapacity(const u64 initialCapacity);
+Vector *newVecWithCapacity(u64 initialCapacity);
 Vector *newVec();
 
-const void *vecAt(const Vector *v, const u64 i);
+void *vecAt(const Vector *v, u64 i);
 u64 vecSize(const Vector *v);
 bool vecIsEmpty(const Vector *v);
 
@@ -73,14 +77,14 @@ void *vecRemoveLast(Vector *v);
 void vecInsertAt(Vector *v, u64 i, void *data);
 void *vecRemoveAt(Vector *v, u64 i);
 
-void *vecReplace(Vector *v, const u64 i, void *data);
-void vecSwap(Vector *v, const u64 i, const u64 j);
-void vecRemoveRange(Vector *v, const i64 start, const i64 end, const i64 step, void freeData(void *));
+void *vecReplace(Vector *v, u64 i, void *data);
+void vecSwap(Vector *v, u64 i, u64 j);
+void vecRemoveRange(Vector *v, i64 start, i64 end, i64 step, void freeData(void *));
 void vecAddVec(Vector *dst, Vector *src);
-void vecAddVecAt(Vector *dest, const u64 i, Vector *src);
+void vecAddVecAt(Vector *dest, u64 i, Vector *src);
 
 Vector *vecClone(const Vector *v, void *dupData(const void *));
-Vector *vecCloneRange(const Vector *v, const i64 start, const i64 end, const i64 step, void *dupData(const void *));
+Vector *vecCloneRange(const Vector *v, i64 start, i64 end, i64 step, void *dupData(const void *));
 void vecShrinkToFit(Vector *v);
 
 void vecClear(Vector *v, void freeData(void *));
@@ -91,9 +95,9 @@ void vecReverse(Vector *v);
 void vecShuffle(Vector *v);
 void vecReduce(Vector *v, bool shouldRemove(const void *, i64 i), void freeData(void *));
 void vecMap(Vector *v, void *transform(const void *));
-void vecMapRange(Vector *v, const i64 start, const i64 end, const i64 step, void *transform(const void *));
+void vecMapRange(Vector *v, i64 start, i64 end, i64 step, void *transform(const void *));
 void vecForEach(const Vector *v, void action(const void *));
-void vecForEachRange(const Vector *v, const i64 start, const i64 end, const i64 step, void action(const void *));
+void vecForEachRange(const Vector *v, i64 start, i64 end, i64 step, void action(const void *));
 void vecPrint(const Vector *v, void printData(const void *));
 
 /*********************************************
@@ -245,6 +249,35 @@ circularList *queueToCircularList(Queue *q);
 /*********************************************
 
 
+                AvlTree - HEADER
+
+
+**********************************************/
+
+typedef struct avlNode {
+	struct avlNode *left;
+	struct avlNode *right;
+	void *key;
+	void *data;
+	int height;
+} avlNode;
+
+avlNode *newAvlNode(void *key, void *data);
+avlNode *avlGetMin(avlNode *root);
+avlNode *avlGetMax(avlNode *root);
+const avlNode *avlFindNode(const avlNode *root, const void *key, int cmpKeys(const void *,const void *));
+bool avlIsExists(const avlNode *root, const void *key, int cmpKeys(const void *,const void *));
+void *avlFind(const avlNode *root, const void *key, int cmpKeys(const void *,const void *));
+void avlInsert(avlNode **root, void *key, void *data, int cmpKeys(const void *,const void *));
+void avlRemove(avlNode **root, const void *key, int cmpKeys(const void *,const void *), void freeKey(void *), void freeData(void *));
+void avlUpdate(avlNode *root, const void *key, int cmpKeys(const void *,const void *), void freeData(void *), void *newData);
+void avlOrderTraverse(const avlNode *root, void action(const void *key, const void *data, void *arg), void *arg);
+void avlPrint(const avlNode *root, void print(const void *key, const void *data, void *arg), void *arg, const int padding);
+void avlFree(avlNode *root, void freeKey(void *), void freeData(void *));
+
+/*********************************************
+
+
                 String - HEADER
 
 
@@ -255,7 +288,10 @@ i32 getFmtSize(const char *fmt, ...);
 i32 getFmtSizeVa(const char *fmt, va_list ap);
 void *memdup(const void *mem, const size_t size);
 void swap(void *a, void *b, const size_t size);
-
+int zatarMax(int a, int b);
+int zatarMin(int a, int b);
+int zatarMin3(int a, int b, int c);
+int zatarMax3(int a, int b, int c);
 
 /*********************************************
 
@@ -348,7 +384,7 @@ Result getScreenSizeByCursor(int *width, int *height);
 Result getScreenSizeByIoctl(int *width, int *height);
 Result getScreenSize(int *width, int *height);
 
-Result registerChangeInWindowSize(void (*funciton)(int));
+Result registerChangeInWindowSize(void funciton(int));
 
 Result enableFullBuffering(FILE *fp);
 
@@ -365,10 +401,6 @@ int readKey();
 
 **********************************************/
 
-#include <dirent.h>
-#include <errno.h>
-#include <sys/types.h>
-
 typedef enum {
 	Read = 0,
 	Write = 1,
@@ -380,8 +412,8 @@ char *expandPath(const char *path);
 void compressPath(char *path);
 bool isExtentionEqual(const char *path, const char *extention);
 
-int dirTraverse(const char *dir, bool (*action)(const char *));
-int traverseFile(const char *fileName, int bufSize, bool (*action)(char[bufSize]));
+int dirTraverse(const char *dir, bool action(const char *));
+int traverseFile(const char *fileName, int bufSize, bool action(char[bufSize]));
 
 bool isDir(const char *path);
 bool isRegularFile(const char *fileName);
@@ -424,7 +456,7 @@ typedef struct {
 	i64 i;
 } VecIter;
 
-VecIter newVecIter(const Vector *v, const i64 start, const i64 end, const i64 step)
+VecIter newVecIter(const Vector *v, i64 start, i64 end, i64 step)
 {
 	assert(step != 0);
 
@@ -463,7 +495,7 @@ bool VecIterIsEnd(const VecIter *vi)
 	return false;
 }
 
-Vector *newVecWithCapacity(const u64 initialCapacity)
+Vector *newVecWithCapacity(u64 initialCapacity)
 {
 	Vector *v = malloc(sizeof(Vector));
 	v->size = 0;
@@ -478,7 +510,7 @@ Vector *newVec()
 	return newVecWithCapacity(MIN_VECTOR_CAPACITY);
 }
 
-const void *vecAt(const Vector *v, const u64 i)
+void *vecAt(const Vector *v, u64 i)
 {
 	assert(i < v->size);
 
@@ -526,19 +558,19 @@ void *vecRemoveAt(Vector *v, u64 i)
 	return dataToRemove;
 }
 
-void *vecReplace(Vector *v, const u64 i, void *data)
+void *vecReplace(Vector *v, u64 i, void *data)
 {
 	void *tmp = v->data[i];
 	v->data[i] = data;
 	return tmp;
 }
 
-void vecSwap(Vector *v, const u64 i, const u64 j)
+void vecSwap(Vector *v, u64 i, u64 j)
 {
 	swap(&v->data[i], &v->data[j], sizeof(void *));
 }
 
-void vecRemoveRange(Vector *v, const i64 start, const i64 end, const i64 step, void freeData(void *))
+void vecRemoveRange(Vector *v, i64 start, i64 end, i64 step, void freeData(void *))
 {
 	u8 tmpPtr;
 	VecIter vi = newVecIter(v, start, end, step);
@@ -564,9 +596,9 @@ void vecAddVec(Vector *dst, Vector *src)
 	vecFree(src, NULL);
 }
 
-void vecAddVecAt(Vector *dest, const u64 i, Vector *src)
+void vecAddVecAt(Vector *dest, u64 i, Vector *src)
 {
-	const u64 oldDestSize = dest->size;
+	u64 oldDestSize = dest->size;
 	dest->size += src->size;
 
 	if (dest->size > dest->capacity) {
@@ -597,7 +629,7 @@ Vector *vecClone(const Vector *v, void *dupData(const void *))
 	return new;
 }
 
-Vector *vecCloneRange(const Vector *v, const i64 start, const i64 end, const i64 step, void *dupData(const void *))
+Vector *vecCloneRange(const Vector *v, i64 start, i64 end, i64 step, void *dupData(const void *))
 {
 	Vector *clone = newVecWithCapacity(vecSize(v));
 	VecIter vi = newVecIter(v, start, end, step);
@@ -649,7 +681,7 @@ void vecReverse(Vector *v)
 void vecShuffle(Vector *v)
 {
 	for (u64 i = 0; i < vecSize(v); i++) {
-		const i64 j = rand() % vecSize(v);
+		i64 j = rand() % vecSize(v);
 		vecSwap(v, i, j);
 	}
 }
@@ -674,7 +706,7 @@ void vecMap(Vector *v, void *transform(const void *))
 		vecReplace(v, i, transform(vecAt(v, i)));
 }
 
-void vecMapRange(Vector *v, const i64 start, const i64 end, const i64 step, void *transform(const void *))
+void vecMapRange(Vector *v, i64 start, i64 end, i64 step, void *transform(const void *))
 {
 	VecIter vi = newVecIter(v, start, end, step);
 	for (i64 i = VecIterBegin(&vi); VecIterIsEnd(&vi); i = VecIterNext(&vi))
@@ -687,7 +719,7 @@ void vecForEach(const Vector *v, void action(const void *))
 		action(vecAt(v, i));
 }
 
-void vecForEachRange(const Vector *v, const i64 start, const i64 end, const i64 step, void action(const void *))
+void vecForEachRange(const Vector *v, i64 start, i64 end, i64 step, void action(const void *))
 {
 	VecIter vi = newVecIter(v, start, end, step);
 	for (i64 i = VecIterBegin(&vi); VecIterIsEnd(&vi); i = VecIterNext(&vi))
@@ -727,7 +759,7 @@ Stack *newStack()
 	return newStackWithCapacity(MIN_STACK_CAPACITY);
 }
 
-Stack *newStackWithCapacity(const u64 capacity)
+Stack *newStackWithCapacity(u64 capacity)
 {
 	return newVecWithCapacity(capacity);
 }
@@ -1252,6 +1284,255 @@ circularList *queueToCircularList(Queue *q)
 /*********************************************
 
 
+             AvlTree IMPLEMENTATION
+
+
+**********************************************/
+
+avlNode *newAvlNode(void *key, void *data)
+{
+	avlNode *n = malloc(sizeof(avlNode));
+	n->key = key;
+	n->data = data;
+	n->height = 1;
+	n->left = NULL;
+	n->right = NULL;
+	return n;
+}
+
+int getHeight(const avlNode *node)
+{
+	if (node == NULL)
+		return 0;
+	return node->height;
+}
+
+void updateHeight(avlNode *node)
+{
+	node->height = 1 + zatarMax(getHeight(node->right), getHeight(node->left));
+}
+
+int getBalanceFactor(const avlNode *node)
+{
+	if (node == NULL)
+		return 0;
+	return getHeight(node->left) - getHeight(node->right);
+}
+
+avlNode *avlGetMin(avlNode *root)
+{
+	while (root->left != NULL)
+		root = root->left;
+	return root;
+}
+
+avlNode *avlGetMax(avlNode *root)
+{
+	while (root->right != NULL)
+		root = root->right;
+	return root;
+}
+
+void leftRotate(avlNode **root)
+{
+	avlNode *newRoot = (*root)->right;
+	avlNode *tmp = newRoot->left;
+
+	newRoot->left = *root;
+	(*root)->right = tmp;
+
+	updateHeight(newRoot->left);
+	updateHeight(newRoot);
+
+	*root = newRoot;
+}
+
+void rightRotate(avlNode **root)
+{
+	avlNode *newRoot = (*root)->left;
+	avlNode *tmp = newRoot->right;
+
+	newRoot->right = *root;
+	(*root)->left = tmp;
+
+	updateHeight(newRoot->right);
+	updateHeight(newRoot);
+
+	*root = newRoot;
+}
+
+void leftRightRotate(avlNode **root)
+{
+	leftRotate(&(*root)->left);
+	rightRotate(root);
+}
+
+void rightLeftRotate(avlNode **root)
+{
+	rightRotate(&(*root)->right);
+	leftRotate(root);
+}
+
+const avlNode *avlFindNode(const avlNode *root, const void *key, int cmpKeys(const void *,const void *))
+{
+	int cmpRes;
+	while (root && (cmpRes = cmpKeys(key, root->key))) {
+		if (cmpRes > 0)
+			root = root->right;
+		else
+			root = root->left;
+	}
+	return root;
+}
+
+bool avlIsExists(const avlNode *root, const void *key, int cmpKeys(const void *,const void *))
+{
+	return avlFindNode(root, key, cmpKeys) != NULL;
+}
+
+void *avlFind(const avlNode *root, const void *key, int cmpKeys(const void *,const void *))
+{
+	const avlNode *node = avlFindNode(root, key, cmpKeys);
+	if (node != NULL)
+		return node->data;
+	return NULL;
+}
+
+void avlInsert(avlNode **root, void *key, void *data, int cmpKeys(const void *,const void *))
+{
+	if (*root == NULL) {
+		*root = newAvlNode(key, data);
+		return;
+	} else if (cmpKeys(key, (*root)->key) > 0) {
+		avlInsert(&(*root)->right, key, data, cmpKeys);
+	} else {
+		avlInsert(&(*root)->left, key, data, cmpKeys);
+	}
+
+	updateHeight(*root);
+	const int bf = getBalanceFactor(*root);
+
+	if (bf > 1 && cmpKeys(key, (*root)->left->key) < 0)
+		rightRotate(root);
+	else if (bf < -1 && cmpKeys(key, (*root)->right->key) > 0)
+		leftRotate(root);
+	else if (bf > 1 && cmpKeys(key, (*root)->left->key) > 0)
+		leftRightRotate(root);
+	else if (bf < -1 && cmpKeys(key, (*root)->right->key)< 0)
+		rightLeftRotate(root);
+}
+
+void avlRemove(avlNode **root, const void *key, int (*cmpKeys)(const void *,const void *), void (*freeKey)(void *), void (*freeData)(void *))
+{
+	if (*root == NULL) {
+		return;
+	} else if (cmpKeys(key, (*root)->key) > 0) {
+		avlRemove(&((*root)->right), key, cmpKeys, freeKey, freeData);
+		return;
+	} else if (cmpKeys(key, (*root)->key) < 0) {
+		avlRemove(&((*root)->left), key, cmpKeys, freeKey, freeData);
+		return;
+	} else {
+		if (freeKey)
+			freeKey((*root)->key);
+
+		if (freeData)
+			freeData((*root)->data);
+
+		if ((*root)->left == NULL) {
+			avlNode *tmp = (*root)->right;
+			free(*root);
+			*root = tmp;
+			return;
+		} else if ((*root)->right == NULL) {
+			avlNode *tmp = (*root)->left;
+			free(*root);
+			*root = tmp;
+			return;
+		}
+
+		avlNode *succesor = avlGetMin((*root)->right);
+
+		(*root)->key = succesor->key;
+		(*root)->data = succesor->data;
+
+		avlRemove(&((*root)->right), succesor->key, cmpKeys, NULL, NULL);
+	}
+
+	updateHeight(*root);
+	int bf = getBalanceFactor(*root);
+
+	if (bf > 1 && getBalanceFactor((*root)->left) >= 0)
+		rightRotate(root);
+	else if (bf < -1 && getBalanceFactor((*root)->right) <= 0)
+		leftRotate(root);
+	else if (bf > 1 && getBalanceFactor((*root)->left) < 0)
+		leftRightRotate(root);
+	else if (bf < -1 && getBalanceFactor((*root)->right) > 0)
+		rightLeftRotate(root);
+}
+
+void avlUpdate(avlNode *root, const void *key, int cmpKeys(const void *,const void *), void freeData(void *), void *newData)
+{
+	avlNode *node = (avlNode *)avlFindNode(root, key, cmpKeys);
+
+	if (node == NULL)
+		return;
+
+	if (freeData)
+		freeData(node->data);
+
+	node->data = newData;
+}
+
+void avlOrderTraverse(const avlNode *root, void action(const void *key, const void *data, void *arg), void *arg)
+{
+	if (root == NULL)
+		return;
+
+    avlOrderTraverse(root->left, action, arg);
+    action(root->key, root->data, arg);
+    avlOrderTraverse(root->right, action, arg);
+}
+
+void printCharNTimes(const char c, const int n)
+{
+	for (int i = 0; i < n; i++)
+		putchar(c);
+}
+
+void avlPrint(const avlNode *root, void print(const void *key, const void *data, void *arg), void *arg, const int padding)
+{
+	if (root == NULL)
+		return;
+
+	printCharNTimes(' ', padding);
+	print(root->key, root->data, arg);
+	avlPrint(root->right, print, arg, padding + 4);
+	avlPrint(root->left, print, arg, padding + 4);
+}
+
+void avlFree(avlNode *root, void freeKey(void *), void freeData(void *))
+{
+	if (root == NULL)
+		return;
+
+	if (freeKey != NULL)
+		freeKey(root->key);
+
+	if (freeData != NULL)
+		freeData(root->data);
+
+	avlFree(root->left, freeKey, freeData);
+	avlFree(root->right, freeKey, freeData);
+
+	free(root);
+}
+
+
+/*********************************************
+
+
              Cursor IMPLEMENTATION
 
 
@@ -1424,7 +1705,7 @@ Result getScreenSize(int *width, int *height)
 	return getScreenSizeByCursor(width, height);
 }
 
-Result registerChangeInWindowSize(void (*funciton)(int))
+Result registerChangeInWindowSize(void funciton(int))
 {
 	struct sigaction sa;
 	sa.sa_handler = funciton;
@@ -1569,7 +1850,7 @@ Result nextInDir(DIR *dir, const char *dirName, char *destFileName, const int de
 	return Ok;
 }
 
-Result dirTraverse(const char *dir, bool (*action)(const char *))
+Result dirTraverse(const char *dir, bool action(const char *))
 {
 	struct dirent *de;
 	DIR *dr = opendir(dir);
@@ -1693,7 +1974,7 @@ Result redirectFd(int srcFd, const char *destFileName)
 	return Ok;
 }
 
-Result traverseFile(const char *fileName, const int bufSize, bool (*action)(char[bufSize]))
+Result traverseFile(const char *fileName, const int bufSize, bool action(char[bufSize]))
 {
 	FILE *fp = fopen(fileName, "r");
 
@@ -1802,6 +2083,26 @@ void *memdup(const void *mem, const size_t size)
 	void *newMem = malloc(size);
 	memcpy(newMem, mem, size);
 	return newMem;
+}
+
+int zatarMax(int a, int b)
+{
+	return a > b ? a : b;
+}
+
+int zatarMin(int a, int b)
+{
+	return a > b ? b : a;
+}
+
+int zatarMin3(int a, int b, int c)
+{
+	return zatarMin(a, zatarMin(b, c));
+}
+
+int zatarMax3(int a, int b, int c)
+{
+	return zatarMax(a, zatarMax(b, c));
 }
 
 
