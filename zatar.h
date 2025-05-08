@@ -1,0 +1,890 @@
+/*
+ *           --Libzatar--
+ *
+ *         Data Structures:
+ *  	      - Vector
+ *
+ *
+ *
+ *  	      #define LIBZATAR_IMPLEMENTATION
+ */
+#ifndef LIBZATAR_H
+#define LIBZATAR_H
+
+#include <stdio.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <termios.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   util header
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+
+typedef enum {
+	Ok = 0,
+	Err = -1,
+} z_Result;
+
+int z_in_range(int min, int val, int max);
+int z_get_file_size(FILE *fp);
+int z_get_fmt_size(const char *fmt, ...);
+int z_get_fmt_size_va(const char *fmt, va_list ap);
+void *z_memdup(const void *mem, const size_t size);
+void z_swap(void *a, void *b, const size_t size);
+int z_max(int a, int b);
+int z_min(int a, int b);
+int z_max3(int a, int b, int c);
+int z_min3(int a, int b, int c);
+
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   cursor header
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+
+#define CTRL_KEY(k) ((k) & 0x1f)
+
+#define C0  "\033[0m"     /*  RESET        */
+
+#define C1  "\033[0;31m"  /*  RED          */
+#define C2  "\033[0;32m"  /*  GREEN        */
+#define C3  "\033[0;33m"  /*  YELLOW       */
+#define C4  "\033[0;34m"  /*  BLUE         */
+#define C5  "\033[0;035m" /*  MAGENTA      */
+#define C6  "\033[0;36m"  /*  CYAN         */
+#define C7  "\033[0;37m"  /*  WHITE        */
+#define C8  "\033[0;90m"  /*  GRAY         */
+
+#define B1  "\033[1;91m"  /*  BOLD RED     */
+#define B2  "\033[1;92m"  /*  BOLD GREEN   */
+#define B3  "\033[1;93m"  /*  BOLD YELLOW  */
+#define B4  "\033[1;94m"  /*  BOLD BLUE    */
+#define B5  "\033[1;95m"  /*  BOLD MAGENTA */
+#define B6  "\033[1;96m"  /*  BOLD CYAN    */
+#define B7  "\033[1;97m"  /*  BOLD WHITE   */
+#define B8  "\033[1;90m"  /*  BOLD GRAY    */
+
+#define Z_KEY_EMPTY       999
+#define Z_KEY_ARROW_LEFT  1000
+#define Z_KEY_ARROW_RIGHT 1001
+#define Z_KEY_ARROW_UP    1002
+#define Z_KEY_ARROW_DOWN  1003
+#define Z_KEY_PAGE_UP     1007
+#define Z_KEY_PAGE_DOWN   1008
+#define Z_KEY_DELETE      1004
+#define Z_KEY_HOME        1005
+#define Z_KEY_END         1006
+
+typedef enum {
+	Z_CURSOR_STYLE_BLOCK_STEADY       = 0,
+	Z_CURSOR_STYLE_BLOCK_BLINKING     = 1,
+	Z_CURSOR_STYLE_UNDERLINE_BLINKING = 3,
+	Z_CURSOR_STYLE_UNDERLINE_STEADY   = 4,
+	Z_CURSOR_STYLE_BEAM_STEADY        = 6,
+	Z_CURSOR_STYLE_BEAM_BLINKING      = 5,
+} Z_CURSOR_STYLE;
+
+z_Result z_enable_raw_mode(int vminKeys, int vtime);
+z_Result z_disable_raw_mode();
+
+void z_disable_line_wrap();
+void z_enbale_line_wrap();
+
+void z_hide_cursor();
+void z_show_cursor();
+
+void z_set_cursor_style(Z_CURSOR_STYLE style);
+
+z_Result z_get_cursor_pos(int *x, int *y);
+void z_set_cursor_pos(int x, int y);
+
+void z_set_cursor_x(int x);
+
+void z_cursor_up(int n);
+void z_cursor_down(int n);
+void z_cursor_right(int n);
+void z_cursor_left(int n);
+
+// unsupported on some terminals
+void z_save_cursor_pos();
+void z_restore_cursor_pos();
+
+void z_enter_alternative_screen();
+void z_exit_alternative_screen();
+
+void z_clear_line();
+void z_clear_screen();
+
+void z_update_screen();
+
+z_Result z_get_screen_size_by_cursor(int *width, int *height);
+z_Result z_get_screen_size_by_ioctl(int *width, int *height);
+z_Result z_get_screen_size(int *width, int *height);
+
+z_Result z_register_change_in_window_size(void function(int));
+
+z_Result z_enable_full_buffering(FILE *fp);
+
+int z_wait_for_byte();
+int z_read_escape_key();
+int z_read_key();
+
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   vector header
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+
+#define VECTOR_DECLARE(name, type)                                     \
+                                                                       \
+typedef struct {                                                       \
+	type *data;                                                        \
+	int len;                                                           \
+	int capacity;                                                      \
+} name;                                                                \
+                                                                       \
+name *name##_new();                                                    \
+type name##_at(name *v, int i);                                        \
+void name##_add(name *v, type data);                                   \
+type name##_remove_last(name *v);                                      \
+int name##_size(const name *v);                                        \
+bool name##_is_empty(const name *v);                                   \
+void name##_for_each(name *v, void function(type));                    \
+void name##_free(name *v, void free_function(type));                   \
+void name##_print(const name *v, void print_data(type))
+
+
+
+#define VECTOR_IMPLEMENT(name, type)                                   \
+                                                                       \
+name *name##_new()                                                     \
+{                                                                      \
+	name *v = malloc(sizeof(name));                                    \
+	v->data = NULL;                                                    \
+	v->len = 0;                                                        \
+	v->capacity = 0;                                                   \
+                                                                       \
+	return v;                                                          \
+}                                                                      \
+                                                                       \
+type name##_at(name *v, int i)                                         \
+{                                                                      \
+	return v->data[i];                                                 \
+}                                                                      \
+                                                                       \
+void name##_add(name *v, type data)                                    \
+{                                                                      \
+	if (v->len + 1 > v->capacity) {                                    \
+		v->capacity = z_max(v->capacity * 2, v->len + 1);              \
+		v->data = realloc(v->data, sizeof(type) * v->capacity);        \
+	}                                                                  \
+                                                                       \
+	v->data[v->len++] = data;                                          \
+}                                                                      \
+                                                                       \
+type name##_remove_last(name *v)                                       \
+{                                                                      \
+	return v->data[--v->len];                                          \
+}                                                                      \
+                                                                       \
+int name##_size(const name *v)                                         \
+{                                                                      \
+	return v->len;                                                     \
+}                                                                      \
+                                                                       \
+bool name##_is_empty(const name *v)                                    \
+{                                                                      \
+	return v->len == 0;                                                \
+}                                                                      \
+                                                                       \
+void name##_for_each(name *v, void function(type))                     \
+{                                                                      \
+	for (int i = 0; i < v->len; i++) {                                 \
+		function(v->data[i]);                                          \
+	}                                                                  \
+}                                                                      \
+                                                                       \
+void name##_free(name *v, void free_function(type))                    \
+{                                                                      \
+	if (free_function) {                                               \
+		name##_for_each(v, free_function);                             \
+	} else {                                                           \
+		free(v->data);                                                 \
+	}                                                                  \
+                                                                       \
+	free(v);                                                           \
+}                                                                      \
+                                                                       \
+void name##_print(const name *v, void print_data(type))                \
+{                                                                      \
+	if (v->len == 0) {                                                 \
+		printf("[]\n");                                                \
+		return;                                                        \
+	}                                                                  \
+                                                                       \
+	printf("[ ");                                                      \
+                                                                       \
+	for (int i = 0; i < v->len - 1; i++) {                             \
+		print_data(v->data[i]);                                        \
+		printf(", ");                                                  \
+	}                                                                  \
+                                                                       \
+	print_data(v->data[v->len - 1]);                                   \
+                                                                       \
+	printf(" ]\n");                                                    \
+}
+
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   path header
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+
+typedef enum {
+	Read = 0,
+	Write = 1,
+} z_PipeMode;
+
+const char *z_get_path_extention(const char *path);
+const char *z_get_home_path();
+char *z_expand_path(const char *path);
+char *z_compress_path(const char *path);
+bool z_is_extention_equal(const char *path, const char *extention);
+
+int z_dir_traverse(const char *dir, bool action(const char *));
+
+bool z_is_dir(const char *pathname);
+bool z_is_regular_file(const char *pathname);
+bool z_is_path_exists(const char *pathname);
+
+int z_write_file(const char *pathname, const char *fmt, ...);
+int z_append_file(const char *pathname, const char *fmt, ...);
+int z_read_file(const char *pathname, const char *fmt, ...);
+
+int z_redirect_fd(int src_fd, const char *dst_pathname);
+int z_popen2(char *path, char *argv[], FILE *ppipe[2]);
+
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+
+
+#ifdef LIBZATAR_IMPLEMENTATION
+
+
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+
+
+
+
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   util implementation
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+
+void z_swap(void *a, void *b, const size_t size)
+{
+	char tmp[size];
+	memcpy(tmp, a, size);
+	memcpy(a, b, size);
+	memcpy(b, tmp, size);
+}
+
+int z_get_file_size(FILE *fp)
+{
+	int curr = ftell(fp);
+	fseek(fp, 0, SEEK_END);
+
+	int size = ftell(fp);
+	fseek(fp, curr, SEEK_SET);
+
+	return size;
+}
+
+int z_get_fmt_size(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	int size = z_get_fmt_size_va(fmt, ap);
+	va_end(ap);
+
+	return size;
+}
+
+int z_get_fmt_size_va(const char *fmt, va_list ap)
+{
+	va_list ap1;
+	va_copy(ap1, ap);
+
+	int size = vsnprintf(NULL, 0, fmt, ap1);
+	va_end(ap1);
+
+	return size;
+}
+
+void *z_memdup(const void *mem, const size_t size)
+{
+	void *newMem = malloc(size);
+	memcpy(newMem, mem, size);
+	return newMem;
+}
+
+int z_max(int a, int b)
+{
+	return a > b ? a : b;
+}
+
+int z_min(int a, int b)
+{
+	return a > b ? b : a;
+}
+
+int z_min3(int a, int b, int c)
+{
+	return z_min(a, z_min(b, c));
+}
+
+int z_max3(int a, int b, int c)
+{
+	return z_max(a, z_max(b, c));
+}
+
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   cursor implementation
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+
+static struct termios original_termios;
+
+z_Result z_enable_raw_mode(int vminKeys, int vtime)
+{
+	if (tcgetattr(STDIN_FILENO, &original_termios) == -1) {
+		return Err;
+	}
+
+	struct termios raw = original_termios;
+	raw.c_cc[VMIN] = vminKeys;
+	raw.c_cc[VTIME] = vtime;
+	raw.c_cflag |= (CS8);
+	raw.c_oflag &= ~(OPOST);
+	raw.c_iflag &= ~(IXON | ICRNL | ISTRIP | INPCK | BRKINT);
+	raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
+
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
+		return Err;
+	}
+
+	return Ok;
+}
+
+z_Result z_disable_raw_mode()
+{
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_termios) == -1) {
+		return Err;
+	}
+
+	return Ok;
+}
+
+z_Result z_get_cursor_pos(int *x, int *y)
+{
+	printf("\033[6n");
+
+	if (scanf("\033[%d;%dR", y, x) == 2) {
+		return Ok;
+	}
+
+	return Err;
+}
+
+#define z_set_cursor_style(style)         printf("\033[%d q", (int)(style))
+#define z_disable_line_wrap()             printf("\033[?7l")
+#define z_enbale_line_wrap()              printf("\033[?7h")
+#define z_hide_cursor()                   printf("\033[?25l")
+#define z_show_cursor()                   printf("\033[?25h")
+#define z_set_cursor_pos(x, y)            printf("\033[%d;%dH", (y), (x))
+#define z_set_cursor_x(x)                 printf("\033[%dG", (x))
+#define z_cursor_up(n)                    printf("\033[%dA", (n))
+#define z_cursor_down(n)                  printf("\033[%dB", (n))
+#define z_cursor_right(n)                 printf("\033[%dC", (n))
+#define z_cursor_left(n)                  printf("\033[%dD", (n))
+#define z_save_cursor_pos()               printf("\033[s")
+#define z_restore_cursor_pos()            printf("\033[u")
+#define z_enter_alternative_screen()      printf("\033[?1049h")
+#define z_exit_alternative_screen()       printf("\033[?1049l")
+#define z_clear_line()                    printf("\033[K")
+#define z_clear_screen()                  printf("\033[2J")
+
+z_Result z_get_screen_size_by_cursor(int *width, int *height)
+{
+	z_set_cursor_pos(999, 999);
+
+	return z_get_cursor_pos(width, height);
+}
+
+z_Result z_get_screen_size_by_ioctl(int *width, int *height)
+{
+	struct winsize ws;
+
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != 0) {
+		return Err;
+	}
+
+	*width = ws.ws_col;
+	*height = ws.ws_row;
+
+	return Ok;
+}
+
+z_Result z_get_screen_size(int *width, int *height)
+{
+	if (z_get_screen_size_by_ioctl(width, height) == Ok) {
+		return Ok;
+	}
+
+	return z_get_screen_size_by_cursor(width, height);
+}
+
+z_Result z_register_change_in_window_size(void funciton(int))
+{
+	struct sigaction sa;
+	sa.sa_handler = funciton;
+	sa.sa_flags = 0;
+	sigemptyset(&sa.sa_mask);
+
+	if (sigaction(SIGWINCH, &sa, NULL) == -1) {
+		return Err;
+	}
+
+	return Ok;
+}
+
+z_Result z_enable_full_buffering(FILE *fp)
+{
+	// do not flush on '\n'
+	if (setvbuf(fp, NULL, _IOFBF, BUFSIZ) != 0) {
+		return Err;
+	}
+
+	return Ok;
+}
+
+int z_wait_for_byte()
+{
+	char c;
+
+	if (read(STDIN_FILENO, &c, 1) != 1) {
+		return Z_KEY_EMPTY;
+	}
+
+	return c;
+}
+
+#define CHAR2_TO_INT(a, b) ((unsigned short)((((unsigned short)b) << 8) | a))
+
+int z_read_escape_key()
+{
+	unsigned short key;
+
+	if (read(STDIN_FILENO, &key, 2) != 2) {
+		return '\033';
+	}
+
+	switch (key) {
+		case CHAR2_TO_INT('[', 'A'): return Z_KEY_ARROW_UP;
+		case CHAR2_TO_INT('[', 'B'): return Z_KEY_ARROW_DOWN;
+		case CHAR2_TO_INT('[', 'C'): return Z_KEY_ARROW_RIGHT;
+		case CHAR2_TO_INT('[', 'D'): return Z_KEY_ARROW_LEFT;
+		case CHAR2_TO_INT('[', '1'): return Z_KEY_HOME; // might be with a ~
+		case CHAR2_TO_INT('[', '5'): return Z_KEY_PAGE_UP; // might be with a ~
+		case CHAR2_TO_INT('[', '6'): return Z_KEY_PAGE_DOWN; // might be with a ~
+	}
+
+	return '\033';
+}
+
+int z_read_key()
+{
+	char c = z_wait_for_byte();
+
+	if (c == '\033') {
+		return z_read_escape_key();
+	}
+
+	return c;
+}
+
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   path implementation
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+const char *getPathExtention(const char *path)
+{
+	const char *lastDot = strrchr(path, '.');
+
+	if (lastDot == NULL) {
+		return path;
+	}
+
+	return lastDot + 1;
+}
+
+const char *getHomePath()
+{
+	const char *home = getenv("HOME");
+
+	if (home == NULL) {
+		return ".";
+	}
+
+	return home;
+}
+
+char *expandPath(const char *path)
+{
+	if (path[0] == '~') {
+
+		const char *home = getHomePath();
+		int size = getFmtSize("%s%s", home, path + 1) + 1;
+		char *dst = malloc(sizeof(char) * size);
+		snprintf(dst, size, "%s%s", home, path + 1);
+
+		return dst;
+	}
+
+	return strdup(path);
+}
+
+void compressPath(char *path)
+{
+	const char *home = getHomePath();
+	int homeLen = strlen(home);
+
+	if (strncmp(home, path, homeLen) == 0) {
+		int bufLen = strlen(path) + homeLen;
+		char buf[bufLen];
+		snprintf(buf, bufLen, "~%s", path + homeLen);
+		strncpy(path, buf, bufLen);
+	}
+}
+
+Result nextInDir(DIR *dir, const char *dirName, char *destFileName, int destLen)
+{
+	struct dirent *de = readdir(dir);
+
+	if (de == NULL) {
+		return Err;
+	}
+
+	snprintf(destFileName, destLen, "%s/%s", dirName, de->d_name);
+
+	return Ok;
+}
+
+Result dirTraverse(const char *dir, bool action(const char *))
+{
+	struct dirent *de;
+	DIR *dr = opendir(dir);
+
+	if (dr == NULL) {
+		return Err;
+	}
+
+	while ((de = readdir(dr))) {
+
+		const char *file = de->d_name;
+		char fullPath[PATH_MAX];
+
+		int len = snprintf(fullPath, PATH_MAX, "%s/%s", dir, file);
+		fullPath[len] = '\0';
+
+		if (action(fullPath) == false) {
+			break;
+		}
+	}
+
+	closedir(dr);
+
+	return Ok;
+}
+
+bool isExtentionEqual(const char *path, const char *extention)
+{
+	return strcmp(getPathExtention(path), extention) == 0;
+}
+
+bool isDir(const char *path)
+{
+	struct stat sb;
+	stat(path, &sb);
+
+	return S_ISDIR(sb.st_mode);
+}
+
+bool isRegularFile(const char *path)
+{
+	struct stat sb;
+	stat(path, &sb);
+
+	return S_ISREG(sb.st_mode);
+}
+
+bool isPathExists(const char *path)
+{
+	return !access(path, F_OK);
+}
+
+Result echoFileWrite(const char *fileName, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	FILE *fp = fopen(fileName, "w");
+
+	if (fp == NULL) {
+		return Err;
+	}
+
+	vfprintf(fp, fmt, ap);
+	va_end(ap);
+	return Ok;
+}
+
+Result echoFileAppend(const char *fileName, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	FILE *fp = fopen(fileName, "a");
+
+	if (fp == NULL) {
+		return Err;
+	}
+
+	vfprintf(fp, fmt, ap);
+	va_end(ap);
+	return Ok;
+}
+
+Result readFile(const char *fileName, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	FILE *fp = fopen(fileName, "r");
+
+	if (fp == NULL) {
+		return Err;
+	}
+
+	if (vfscanf(fp, fmt, ap) == EOF) {
+        fclose(fp);
+		return Err;
+    }
+
+	va_end(ap);
+    fclose(fp);
+	return Ok;
+}
+
+Result redirectFd(int srcFd, const char *destFileName)
+{
+	int destFd = open(destFileName, O_WRONLY);
+
+	if (destFd == -1) {
+		return Err;
+	}
+
+	if (dup2(destFd, srcFd) == -1) {
+		close(destFd);
+		return Err;
+	}
+
+	close(destFd);
+
+	return Ok;
+}
+
+Result traverseFile(const char *fileName, int bufSize, bool action(char[bufSize]))
+{
+	FILE *fp = fopen(fileName, "r");
+
+	if (fp == NULL) {
+		return Err;
+	}
+
+	char buf[bufSize];
+	while (fgets(buf, bufSize, fp) && action(buf));
+
+	return Ok;
+}
+
+void getFullFileName(const char *dirName, const char *fileName, char *dest, int destLen)
+{
+	snprintf(dest, destLen, "%s/%s", dirName, fileName);
+}
+
+Result popen2(char *path, char *argv[], FILE *ppipe[2])
+{
+	int output[2];
+	int input[2];
+
+	if (pipe(output) == -1 || pipe(input) == -1) {
+		return Err;
+	}
+
+	int pid = fork();
+
+	if (pid == -1) {
+		return Err;
+	}
+
+	if (pid) {
+		// parent
+		close(output[Write]);
+		ppipe[Write] = fdopen(input[Write], "w");
+		ppipe[Read] = fdopen(output[Read], "r");
+	} else {
+		// child
+		dup2(input[Read], STDIN_FILENO);
+		dup2(output[Write], STDOUT_FILENO);
+		close(input[Write]);
+		close(input[Read]);
+		close(output[Write]);
+		close(output[Read]);
+		execvp(path, argv);
+		exit(EXIT_FAILURE);
+	}
+
+	return Ok;
+}
+
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+
+#endif // end implementation
+#endif // end header
+
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
+//       $       $       $       $       $       $        $        $
+//   $       $       $       $       $       $       $        $        $
