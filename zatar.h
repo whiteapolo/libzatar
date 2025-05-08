@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <dirent.h>
 
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
@@ -298,8 +299,8 @@ typedef enum {
 
 const char *z_get_path_extention(const char *path);
 const char *z_get_home_path();
-char *z_expand_path(const char *path);
-char *z_compress_path(const char *path);
+char *z_expand_path(const char *pathname);
+char *z_compress_path(const char *pathname);
 bool z_is_extention_equal(const char *path, const char *extention);
 
 int z_dir_traverse(const char *dir, bool action(const char *));
@@ -621,18 +622,19 @@ int z_read_key()
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
 //   *       *       *       *       *       *       *        *        *
-const char *getPathExtention(const char *path)
-{
-	const char *lastDot = strrchr(path, '.');
 
-	if (lastDot == NULL) {
-		return path;
+const char *z_get_path_extention(const char *pathname)
+{
+	const char *last_dot = strrchr(pathname, '.');
+
+	if (last_dot == NULL) {
+		return pathname;
 	}
 
-	return lastDot + 1;
+	return last_dot + 1;
 }
 
-const char *getHomePath()
+const char *z_get_home_path()
 {
 	const char *home = getenv("HOME");
 
@@ -643,48 +645,39 @@ const char *getHomePath()
 	return home;
 }
 
-char *expandPath(const char *path)
+char *z_expand_path(const char *pathname)
 {
-	if (path[0] == '~') {
+	if (pathname[0] == '~') {
 
-		const char *home = getHomePath();
-		int size = getFmtSize("%s%s", home, path + 1) + 1;
+		const char *home = z_get_home_path();
+		int size = z_get_fmt_size("%s%s", home, pathname + 1) + 1;
 		char *dst = malloc(sizeof(char) * size);
-		snprintf(dst, size, "%s%s", home, path + 1);
+		snprintf(dst, size, "%s%s", home, pathname + 1);
 
 		return dst;
 	}
 
-	return strdup(path);
+	return strdup(pathname);
 }
 
-void compressPath(char *path)
+char *z_compress_path(const char *pathname)
 {
-	const char *home = getHomePath();
-	int homeLen = strlen(home);
+	const char *home = z_get_home_path();
+	int home_len = strlen(home);
 
-	if (strncmp(home, path, homeLen) == 0) {
-		int bufLen = strlen(path) + homeLen;
-		char buf[bufLen];
-		snprintf(buf, bufLen, "~%s", path + homeLen);
-		strncpy(path, buf, bufLen);
-	}
-}
+	if (strncmp(home, pathname, home_len) == 0) {
+		int len = strlen(pathname) - home_len + 1;
+		char *ret = malloc(sizeof(char) * len);
+		ret[0] = '~';
+		strcpy(ret + 1, pathname + home_len);
 
-Result nextInDir(DIR *dir, const char *dirName, char *destFileName, int destLen)
-{
-	struct dirent *de = readdir(dir);
-
-	if (de == NULL) {
-		return Err;
+		return ret;
 	}
 
-	snprintf(destFileName, destLen, "%s/%s", dirName, de->d_name);
-
-	return Ok;
+	return strdup(pathname);
 }
 
-Result dirTraverse(const char *dir, bool action(const char *))
+z_Result z_dir_traverse(const char *dir, bool action(const char *))
 {
 	struct dirent *de;
 	DIR *dr = opendir(dir);
@@ -693,10 +686,11 @@ Result dirTraverse(const char *dir, bool action(const char *))
 		return Err;
 	}
 
+	char fullPath[PATH_MAX];
+
 	while ((de = readdir(dr))) {
 
 		const char *file = de->d_name;
-		char fullPath[PATH_MAX];
 
 		int len = snprintf(fullPath, PATH_MAX, "%s/%s", dir, file);
 		fullPath[len] = '\0';
@@ -711,33 +705,33 @@ Result dirTraverse(const char *dir, bool action(const char *))
 	return Ok;
 }
 
-bool isExtentionEqual(const char *path, const char *extention)
+bool z_is_extention_equal(const char *pathname, const char *extention)
 {
-	return strcmp(getPathExtention(path), extention) == 0;
+	return strcmp(z_get_path_extention(pathname), extention) == 0;
 }
 
-bool isDir(const char *path)
+bool z_is_dir(const char *pathname)
 {
 	struct stat sb;
-	stat(path, &sb);
+	stat(pathname, &sb);
 
 	return S_ISDIR(sb.st_mode);
 }
 
-bool isRegularFile(const char *path)
+bool z_is_regular_file(const char *pathname)
 {
 	struct stat sb;
-	stat(path, &sb);
+	stat(pathname, &sb);
 
 	return S_ISREG(sb.st_mode);
 }
 
-bool isPathExists(const char *path)
+bool z_is_path_exists(const char *pathname)
 {
-	return !access(path, F_OK);
+	return !access(pathname, F_OK);
 }
 
-Result echoFileWrite(const char *fileName, const char *fmt, ...)
+z_Result z_write_file(const char *fileName, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -753,7 +747,7 @@ Result echoFileWrite(const char *fileName, const char *fmt, ...)
 	return Ok;
 }
 
-Result echoFileAppend(const char *fileName, const char *fmt, ...)
+z_Result z_append_file(const char *fileName, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -769,7 +763,7 @@ Result echoFileAppend(const char *fileName, const char *fmt, ...)
 	return Ok;
 }
 
-Result readFile(const char *fileName, const char *fmt, ...)
+z_Result z_read_file(const char *fileName, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -790,7 +784,7 @@ Result readFile(const char *fileName, const char *fmt, ...)
 	return Ok;
 }
 
-Result redirectFd(int srcFd, const char *destFileName)
+z_Result z_redirect_fd(int srcFd, const char *destFileName)
 {
 	int destFd = open(destFileName, O_WRONLY);
 
@@ -808,26 +802,7 @@ Result redirectFd(int srcFd, const char *destFileName)
 	return Ok;
 }
 
-Result traverseFile(const char *fileName, int bufSize, bool action(char[bufSize]))
-{
-	FILE *fp = fopen(fileName, "r");
-
-	if (fp == NULL) {
-		return Err;
-	}
-
-	char buf[bufSize];
-	while (fgets(buf, bufSize, fp) && action(buf));
-
-	return Ok;
-}
-
-void getFullFileName(const char *dirName, const char *fileName, char *dest, int destLen)
-{
-	snprintf(dest, destLen, "%s/%s", dirName, fileName);
-}
-
-Result popen2(char *path, char *argv[], FILE *ppipe[2])
+z_Result z_popen2(char *pathname, char *argv[], FILE *ppipe[2])
 {
 	int output[2];
 	int input[2];
@@ -855,7 +830,7 @@ Result popen2(char *path, char *argv[], FILE *ppipe[2])
 		close(input[Read]);
 		close(output[Write]);
 		close(output[Read]);
-		execvp(path, argv);
+		execvp(pathname, argv);
 		exit(EXIT_FAILURE);
 	}
 
