@@ -3,26 +3,27 @@
 #define LIBZATAR_IMPLEMENTATION
 #include "zatar.h"
 
-VECTOR_DECLARE(z_vector_int, int);
-VECTOR_IMPLEMENT(z_vector_int, int);
-
-void print_int(int a)
-{
-	printf("%d", a);
-}
-
 int main(void)
 {
-	z_vector_int *v = z_vector_int_new();
+	FILE *fp = fopen("main.c", "r");
 
-	z_vector_int_add(v, 5);
-	z_vector_int_add(v, 1);
-	z_vector_int_add(v, 2);
-	z_vector_int_add(v, 6);
-	z_vector_int_add(v, 9);
+	if (fp == NULL) {
+		return 1;
+	}
 
-	z_vector_int_print(v, print_int);
-	z_vector_int_free(v, NULL);
+	z_str f = z_read_whole_file(fp);
+
+	z_str_slice line = z_str_tok_init(f, "\n");
+
+	while (z_str_tok_next(f, &line, "\n") != Err) {
+		printf("--- ");
+		z_str_print(line);
+		printf("--- \n");
+	}
+
+	z_str_free(&f);
+
+	fclose(fp);
 
 	return 0;
 }

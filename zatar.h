@@ -340,20 +340,22 @@ z_str z_str_new_va(const char *fmt, va_list ap);
 void z_str_push(z_str *s, const char *fmt, ...);
 void z_str_push_va(z_str *s, const char *fmt, va_list ap);
 void z_str_push_c(z_str *s, char c);
-void z_str_push_str(z_str *dst, const z_str *src);
+void z_str_push_str(z_str *dst, const z_str_slice src);
 
 int z_str_len(z_str_slice s);
 bool z_str_is_empty(z_str_slice s);
 
-z_str_slice z_str_tok_start(z_str_slice s, const char *delim);
-z_str_slice z_str_tok_next(z_str_slice s, z_str_slice prev_slice, const char *delim);
+z_str_slice z_str_tok_init(z_str_slice s, const char *delim);
+z_result z_str_tok_next(z_str_slice s, z_str_slice *slice, const char *delim);
 
 void z_str_replace(z_str *s, const char *target, const char *replacement);
 void z_str_trim(z_str *s);
 void z_str_trim_cset(z_str *s, const char *cset);
 
+void z_str_print(z_str_slice s);
+void z_str_println(z_str_slice s);
 void z_str_free(z_str *s);
-string z_str_read_whole_file(const char *pathname);
+z_str z_read_whole_file(FILE *fp);
 
 
 //   $       $       $       $       $       $       $        $        $
@@ -887,7 +889,7 @@ z_result z_popen2(char *pathname, char *argv[], FILE *ppipe[2])
 //   *       *       *       *       *       *       *        *        *
 //
 //
-//   scanner implementation
+//   string implementation
 //
 //
 //   *       *       *       *       *       *       *        *        *
@@ -896,16 +898,143 @@ z_result z_popen2(char *pathname, char *argv[], FILE *ppipe[2])
 //       *       *       *       *       *       *        *        *
 //   *       *       *       *       *       *       *        *        *
 
-typedef struct {
-	FILE *fp;
-	char *buffer;
-	int buffer_len;
-	char delim;
-} z_scanner;
+z_str z_str_new(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
 
-z_scanner *z_scanner_new(const char *pathname);
-char *z_scanner_next(z_scanner *scanner);
-void z_scanner_free(z_scanner *scanner);
+	z_str s = z_str_new_va(fmt, ap);
+	va_end(ap);
+
+	return s;
+}
+
+z_str z_str_new_va(const char *fmt, va_list ap)
+{
+	z_str s;
+	va_list ap1;
+	va_copy(ap1, ap);
+
+	s.len = z_get_fmt_size_va(fmt, ap1);
+	va_end(ap1);
+
+	s.ptr = malloc(sizeof(char) * (s.len + 1));
+	va_copy(ap1, ap);
+	vsnprintf(s.ptr, s.len + 1, fmt, ap1);
+	va_end(ap1);
+
+	return s;
+}
+
+void z_str_push(z_str *s, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	z_str_push_va(s, fmt, ap);
+	va_end(ap);
+}
+
+void z_str_push_va(z_str *s, const char *fmt, va_list ap)
+{
+	int len = z_get_fmt_size_va(fmt, ap);
+
+	va_list ap1;
+	va_copy(ap1, ap);
+
+	s->ptr = realloc(s->ptr, sizeof(char) * (s->len + len + 1));
+
+	vsnprintf(s->ptr + s->len, len + 1, fmt, ap1);
+	va_end(ap1);
+}
+
+void z_str_push_c(z_str *s, char c)
+{
+	s->ptr = realloc(s->ptr, sizeof(char) * (++s->len + 1));
+	s->ptr[s->len - 1] = c;
+}
+
+void z_str_push_str(z_str *dst, const z_str_slice src)
+{
+	z_str_push(dst, "%.*s", src.len, src.ptr);
+}
+
+int z_str_len(z_str_slice s)
+{
+	return s.len;
+}
+
+bool z_str_is_empty(z_str_slice s)
+{
+	return s.len == 0;
+}
+
+
+
+z_str_slice z_str_tok_init(z_str_slice s, const char *delim)
+{
+	z_str_slice slice = {
+		.len = 0,
+		.ptr = s.ptr,
+	};
+
+	return slice;
+}
+
+z_result z_str_tok_next(z_str_slice s, z_str_slice *slice, const char *delim)
+{
+	char *start = slice->ptr + slice->len;
+	char *str_end = s.ptr + s.len;
+
+	while (start < str_end && strchr(delim, *start) != NULL) {
+		start++;
+	}
+
+	char *end = start;
+
+	while (end < str_end && strchr(delim, *end) == NULL) {
+		end++;
+	}
+
+	if (start == str_end) {
+		return Err;
+	}
+
+	slice->ptr = start;
+	slice->len = end - start;
+
+	return Ok;
+}
+
+void z_str_replace(z_str *s, const char *target, const char *replacement);
+void z_str_trim(z_str *s);
+void z_str_trim_cset(z_str *s, const char *cset);
+
+void z_str_print(z_str_slice s)
+{
+	printf("%.*s", s.len, s.ptr);
+}
+
+void z_str_println(z_str_slice s)
+{
+	printf("%.*s\n", s.len, s.ptr);
+}
+
+void z_str_free(z_str *s)
+{
+	free(s->ptr);
+}
+
+z_str z_read_whole_file(FILE *fp)
+{
+	z_str s;
+
+	int file_size = z_get_file_size(fp);
+	s.ptr = malloc(sizeof(char) * (file_size + 1));
+	s.len = fread(s.ptr, sizeof(char), file_size, fp);
+	s.ptr[s.len] = '\0';
+
+	return s;
+}
 
 //   $       $       $       $       $       $       $        $        $
 //       $       $       $       $       $       $        $        $
