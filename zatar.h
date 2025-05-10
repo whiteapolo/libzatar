@@ -185,7 +185,7 @@ name *name##_new();                                                    \
 type name##_at(name *v, int i);                                        \
 void name##_add(name *v, type data);                                   \
 type name##_remove_last(name *v);                                      \
-int name##_len(const name *v);                                        \
+int name##_len(const name *v);                                         \
 bool name##_is_empty(const name *v);                                   \
 void name##_for_each(name *v, void function(type));                    \
 void name##_free(name *v, void free_function(type));                   \
@@ -223,7 +223,7 @@ type name##_remove_last(name *v)                                       \
 	return tmp;                                                        \
 }                                                                      \
                                                                        \
-int name##_len(const name *v)                                         \
+int name##_len(const name *v)                                          \
 {                                                                      \
 	return v->len;                                                     \
 }                                                                      \
@@ -1005,9 +1005,9 @@ z_result z_str_tok_next(z_str_slice s, z_str_slice *slice, const char *delim)
 	return Ok;
 }
 
-void z_str_replace(z_str *s, const char *target, const char *replacement);
-void z_str_trim(z_str *s);
-void z_str_trim_cset(z_str *s, const char *cset);
+void z_str_replace(z_str *s, const char *target, const char *replacement); // TODO: implement
+void z_str_trim(z_str *s); // TODO: implement
+void z_str_trim_cset(z_str *s, const char *cset); // TODO: implement
 
 void z_str_print(z_str_slice s)
 {
@@ -1035,6 +1035,78 @@ z_str z_read_whole_file(FILE *fp)
 
 	return s;
 }
+
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   avl tree header
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+
+#define AVL_TREE_DECLARE(name, key_type, data_type)                               \
+                                                                                  \
+typedef struct name##_node {                                                      \
+	struct name##_node *left;                                                     \
+	struct name##_node *right;                                                    \
+	key_type key;                                                                 \
+	data_type data;                                                               \
+	int height;                                                                   \
+} name##_node;                                                                    \
+                                                                                  \
+name##_node *name##_node_new(key_type key, data_type data);                       \
+name##_node *name##_get_min(name##_node *root);                                   \
+name##_node *name##_get_max(name##_node *root);                                   \
+                                                                                  \
+name##_node *name##_find_node(const name##_node *root,                            \
+							key_type key,                                         \
+							int cmp_key(key_type, key_type));                     \
+                                                                                  \
+bool name##_is_exists(const name##_node *root,                                    \
+				   	 key_type key,                                                \
+					 int cmp_keys(key_type, key_type));                           \
+                                                                                  \
+data_type name##_find(const name##_node *root,                                    \
+				     key_type key,                                                \
+					 int cmp_keys(key_type, key_type));                           \
+                                                                                  \
+void name##_insert(name##_node **root,                                            \
+	              key_type key,                                                   \
+	              data_type data,                                                 \
+	              int cmp_keys(key_type, key_type));                              \
+                                                                                  \
+void name##_remove(name##_node **root,                                            \
+		          key_type key,                                                   \
+				  int cmp_keys(key_type, key_type),                               \
+				  void free_key(key_type),                                        \
+				  void free_data(data_type));                                     \
+                                                                                  \
+void name##_update(name##_node *root,                                             \
+				  key_type key,                                                   \
+				  int cmp_keys(key_type, key_type),                               \
+				  void free_data(data_type),                                      \
+				  data_type new_data);                                            \
+                                                                                  \
+void name##_order_traverse(const name##_node *root,                               \
+		                  void action(key_type key, data_type data, void *arg),   \
+						  void *arg);                                             \
+                                                                                  \
+void name##_print(name##_node *root,                                              \
+		         void print(key_type key, data_type data, void *arg),             \
+				 void *arg,                                                       \
+				 int padding);                                                    \
+                                                                                  \
+void name##_free(name##_node *root,                                               \
+		        void free_key(key_type),                                          \
+				void free_data(data_type));
 
 //   $       $       $       $       $       $       $        $        $
 //       $       $       $       $       $       $        $        $
