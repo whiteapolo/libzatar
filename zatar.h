@@ -313,6 +313,15 @@ typedef struct {                  \
 
 #define Z_MAT_AT(mat, x, y) ((mat)->ptr[(y) * (mat)->x + x])
 
+#define Z_MAT_INIT(mat, x, y)                                     \
+	do {                                                          \
+		(mat)->ptr = malloc(sizeof((mat)->ptr[0]) * (x) * (y));   \
+		(mat)->x = x;                                             \
+		(mat)->y = y;                                             \
+	} while (0)
+
+#define Z_MAT_FREE(mat) free((mat)->ptr)
+
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
 //   *       *       *       *       *       *       *        *        *
