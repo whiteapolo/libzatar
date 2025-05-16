@@ -55,6 +55,16 @@ int z_min(int a, int b);
 int z_max3(int a, int b, int c);
 int z_min3(int a, int b, int c);
 
+#define z_da_append(da, item, grow_rate)                                            \
+	do {                                                                            \
+		(da)->len++;                                                                \
+		if ((da)->len >= (da)->capacity) {                                          \
+			(da)->capacity = z_max(1, (da)->capacity * (grow_rate));                \
+			(da)->ptr = realloc((da)->ptr, sizeof((da)->ptr[0]) * (da)->capacity);  \
+		}                                                                           \
+		(da)->ptr[(da)->len - 1] = item;                                            \
+	} while (0)
+
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
 //   *       *       *       *       *       *       *        *        *
@@ -179,6 +189,7 @@ int z_read_key();
 typedef struct {                                                       \
 	type *ptr;                                                         \
 	int len;                                                           \
+	int capacity;                                                      \
 } name;                                                                \
                                                                        \
 name *name##_new();                                                    \
@@ -200,6 +211,7 @@ name *name##_new()                                                     \
 	name *v = malloc(sizeof(name));                                    \
 	v->ptr = NULL;                                                     \
 	v->len = 0;                                                        \
+	v->capacity = 0;                                                   \
                                                                        \
 	return v;                                                          \
 }                                                                      \
@@ -211,16 +223,12 @@ type name##_at(name *v, int i)                                         \
                                                                        \
 void name##_add(name *v, type data)                                    \
 {                                                                      \
-	v->ptr = realloc(v->ptr, sizeof(type) * (++v->len));               \
-	v->ptr[v->len - 1] = data;                                         \
+	z_da_append(v, data, 2)                                            \
 }                                                                      \
                                                                        \
 type name##_remove_last(name *v)                                       \
 {                                                                      \
-	type tmp = v->ptr[--v->len];                                       \
-	v->ptr = realloc(v->ptr, sizeof(type) * v->len);                   \
-                                                                       \
-	return tmp;                                                        \
+	return v->ptr[--v->len];                                           \
 }                                                                      \
                                                                        \
 int name##_len(const name *v)                                          \
@@ -330,6 +338,7 @@ z_result z_popen2(char *path, char *argv[], FILE *ppipe[2]);
 typedef struct {
 	char *ptr;
 	int len;
+	int capacity;
 } z_str;
 
 typedef z_str z_str_slice;
@@ -340,6 +349,8 @@ z_str z_str_new_va(const char *fmt, va_list ap);
 void z_str_push(z_str *s, const char *fmt, ...);
 void z_str_push_va(z_str *s, const char *fmt, va_list ap);
 void z_str_push_c(z_str *s, char c);
+char z_str_top_c(z_str *s);
+char z_str_pop_c(z_str *s);
 void z_str_push_str(z_str *dst, const z_str_slice src);
 
 int z_str_len(z_str_slice s);
@@ -902,7 +913,6 @@ z_str z_str_new(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-
 	z_str s = z_str_new_va(fmt, ap);
 	va_end(ap);
 
@@ -911,17 +921,8 @@ z_str z_str_new(const char *fmt, ...)
 
 z_str z_str_new_va(const char *fmt, va_list ap)
 {
-	z_str s;
-	va_list ap1;
-	va_copy(ap1, ap);
-
-	s.len = z_get_fmt_size_va(fmt, ap1);
-	va_end(ap1);
-
-	s.ptr = malloc(sizeof(char) * (s.len + 1));
-	va_copy(ap1, ap);
-	vsnprintf(s.ptr, s.len + 1, fmt, ap1);
-	va_end(ap1);
+	z_str s = {0};
+	z_str_push_va(&s, fmt, ap);
 
 	return s;
 }
@@ -941,7 +942,9 @@ void z_str_push_va(z_str *s, const char *fmt, va_list ap)
 	va_list ap1;
 	va_copy(ap1, ap);
 
-	s->ptr = realloc(s->ptr, sizeof(char) * (s->len + len + 1));
+	int new_len = z_max(s->len + len + 1, s->capacity * 2);
+
+	s->ptr = realloc(s->ptr, sizeof(char) * new_len);
 
 	vsnprintf(s->ptr + s->len, len + 1, fmt, ap1);
 	va_end(ap1);
@@ -949,8 +952,17 @@ void z_str_push_va(z_str *s, const char *fmt, va_list ap)
 
 void z_str_push_c(z_str *s, char c)
 {
-	s->ptr = realloc(s->ptr, sizeof(char) * (++s->len + 1));
-	s->ptr[s->len - 1] = c;
+	z_da_append(s, c, 2);
+}
+
+char z_str_top_c(z_str *s)
+{
+	return s->ptr[s->len - 1];
+}
+
+char z_str_pop_c(z_str *s)
+{
+	return s->ptr[--s->len];
 }
 
 void z_str_push_str(z_str *dst, const z_str_slice src)
@@ -967,8 +979,6 @@ bool z_str_is_empty(z_str_slice s)
 {
 	return s.len == 0;
 }
-
-
 
 z_str_slice z_str_tok_init(z_str_slice s, const char *delim)
 {
