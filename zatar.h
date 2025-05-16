@@ -42,6 +42,8 @@
 //       *       *       *       *       *       *        *        *
 //   *       *       *       *       *       *       *        *        *
 
+#define Z_DEFAULT_GROWTH_RATE 2
+
 typedef enum { Ok, Err, } z_result;
 
 int z_in_range(int min, int val, int max);
@@ -64,6 +66,14 @@ int z_min3(int a, int b, int c);
 		}                                                                           \
 		(da)->ptr[(da)->len - 1] = item;                                            \
 	} while (0)
+
+#define z_da_append_many(da, items, len, grow_rate)                                 \
+	do {                                                                            \
+		for (int i = 0; i < (len); i++) {                                           \
+			z_da_append(da, items[i], grow_rate);                                   \
+		}                                                                           \
+	} while (0)
+
 
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
@@ -204,7 +214,7 @@ void name##_print(const name *v, void print_data(type))
 
 
 
-#define VECTOR_IMPLEMENT(name, type)                                   \
+#define Z_VECTOR_IMPLEMENT(name, type)                                   \
                                                                        \
 name *name##_new()                                                     \
 {                                                                      \
@@ -223,7 +233,7 @@ type name##_at(name *v, int i)                                         \
                                                                        \
 void name##_add(name *v, type data)                                    \
 {                                                                      \
-	z_da_append(v, data, 2)                                            \
+	z_da_append(v, data, Z_DEFAULT_GROWTH_RATE)                        \
 }                                                                      \
                                                                        \
 type name##_remove_last(name *v)                                       \
@@ -277,6 +287,31 @@ void name##_print(const name *v, void print_data(type))                \
                                                                        \
 	printf(" ]\n");                                                    \
 }
+
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   matrix header
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+
+#define Z_MAT_DECLARE(name, type) \
+typedef struct {                  \
+	type *ptr;                    \
+	int x;                        \
+	int y;                        \
+} name;
+
+#define Z_MAT_AT(mat, x, y) ((mat)->ptr[(y) * (mat)->x + x])
 
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
@@ -937,22 +972,22 @@ void z_str_push(z_str *s, const char *fmt, ...)
 
 void z_str_push_va(z_str *s, const char *fmt, va_list ap)
 {
-	int len = z_get_fmt_size_va(fmt, ap);
-
 	va_list ap1;
 	va_copy(ap1, ap);
 
-	int new_len = z_max(s->len + len + 1, s->capacity * 2);
+	int len = z_get_fmt_size_va(fmt, ap);
+	char buf[len + 1];
 
-	s->ptr = realloc(s->ptr, sizeof(char) * new_len);
+	vsnprintf(buf, len + 1, fmt, ap1);
+	z_da_append_many(s, buf, len + 1, Z_DEFAULT_GROWTH_RATE);
 
-	vsnprintf(s->ptr + s->len, len + 1, fmt, ap1);
 	va_end(ap1);
 }
 
 void z_str_push_c(z_str *s, char c)
 {
-	z_da_append(s, c, 2);
+	s->ptr[s->len] = c;
+	z_da_append(s, '\0', Z_DEFAULT_GROWTH_RATE);
 }
 
 char z_str_top_c(z_str *s)
