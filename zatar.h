@@ -57,23 +57,14 @@ int z_min(int a, int b);
 int z_max3(int a, int b, int c);
 int z_min3(int a, int b, int c);
 
-#define z_da_append(da, item, grow_rate)                                            \
-	do {                                                                            \
-		(da)->len++;                                                                \
-		if ((da)->len >= (da)->capacity) {                                          \
-			(da)->capacity = z_max(1, (da)->capacity * (grow_rate));                \
-			(da)->ptr = realloc((da)->ptr, sizeof((da)->ptr[0]) * (da)->capacity);  \
-		}                                                                           \
-		(da)->ptr[(da)->len - 1] = item;                                            \
+#define z_ensure_capacity(da, cap)                                                     \
+	do {                                                                               \
+		int new_capacity = z_max((cap), (da)->capacity * Z_DEFAULT_GROWTH_RATE);  \
+		if (new_capacity > (da)->capacity) {                                           \
+			(da)->capacity = new_capacity;                                             \
+			(da)->ptr = realloc((da)->ptr, sizeof((da)->ptr[0]) * (da)->capacity);     \
+		}                                                                              \
 	} while (0)
-
-#define z_da_append_many(da, items, len, grow_rate)                                 \
-	do {                                                                            \
-		for (int i = 0; i < (len); i++) {                                           \
-			z_da_append(da, items[i], grow_rate);                                   \
-		}                                                                           \
-	} while (0)
-
 
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
@@ -233,7 +224,8 @@ type name##_at(name *v, int i)                                         \
                                                                        \
 void name##_add(name *v, type data)                                    \
 {                                                                      \
-	z_da_append(v, data, Z_DEFAULT_GROWTH_RATE)                        \
+	z_ensure_capacity(v, v->len + 1);                                  \
+	v->ptr[v->len++] = data;                                           \
 }                                                                      \
                                                                        \
 type name##_remove_last(name *v)                                       \
@@ -412,6 +404,25 @@ void z_str_println(z_str_slice s);
 void z_str_free(z_str *s);
 z_str z_read_whole_file(FILE *fp);
 
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   cmd header
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+
+// typedef struct {
+// 	char **
+// } z_cmd;
 
 //   $       $       $       $       $       $       $        $        $
 //       $       $       $       $       $       $        $        $
@@ -981,22 +992,21 @@ void z_str_push(z_str *s, const char *fmt, ...)
 
 void z_str_push_va(z_str *s, const char *fmt, va_list ap)
 {
+	int len = z_get_fmt_size_va(fmt, ap);
+	z_ensure_capacity(s, s->len + len + 1);
+
 	va_list ap1;
 	va_copy(ap1, ap);
-
-	int len = z_get_fmt_size_va(fmt, ap);
-	char buf[len + 1];
-
-	vsnprintf(buf, len + 1, fmt, ap1);
-	z_da_append_many(s, buf, len + 1, Z_DEFAULT_GROWTH_RATE);
-
+	vsnprintf(s->ptr + s->len, len + 1, fmt, ap1);
 	va_end(ap1);
+
+	s->len = s->len + len;
 }
 
 void z_str_push_c(z_str *s, char c)
 {
-	s->ptr[s->len] = c;
-	z_da_append(s, '\0', Z_DEFAULT_GROWTH_RATE);
+	z_ensure_capacity(s, s->len + 1);
+	s->ptr[s->len++] = c;
 }
 
 char z_str_top_c(z_str *s)

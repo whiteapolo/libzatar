@@ -3,27 +3,19 @@
 #define LIBZATAR_IMPLEMENTATION
 #include "zatar.h"
 
+void str_debug(z_str s)
+{
+	printf("s.len = %d\n", s.len);
+	// printf("s.capacity = %d\n", s.capacity);
+}
+
 int main(void)
 {
-	FILE *fp = fopen("main.c", "r");
-
-	if (fp == NULL) {
-		return 1;
-	}
-
-	z_str f = z_read_whole_file(fp);
-
-	z_str_slice line = z_str_tok_init(f, "\n");
-
-	while (z_str_tok_next(f, &line, "\n") != Err) {
-		printf("--- ");
-		z_str_print(line);
-		printf("--- \n");
-	}
-
-	z_str_free(&f);
-
-	fclose(fp);
+	z_str s = z_str_new("6969");
+	z_str_push(&s, "oooror %s", "hello");
+	z_str_push_c(&s, '$');
+	z_str_println(s);
+	z_str_free(&s);
 
 	return 0;
 }
