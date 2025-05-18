@@ -1,21 +1,30 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <time.h>
+
 #define LIBZATAR_IMPLEMENTATION
 #include "zatar.h"
 
-void str_debug(z_str s)
+Z_VECTOR_DECLARE(VecI, int, veci);
+Z_VECTOR_IMPLEMENT(VecI, int, veci);
+
+void print_int(int a)
 {
-	printf("s.len = %d\n", s.len);
-	// printf("s.capacity = %d\n", s.capacity);
+	printf("%d", a);
 }
 
 int main(void)
 {
-	z_str s = z_str_new("6969");
-	z_str_push(&s, "oooror %s", "hello");
-	z_str_push_c(&s, '$');
-	z_str_println(s);
-	z_str_free(&s);
+	srand(time(NULL));
 
-	return 0;
+	VecI v;
+	veci_init(&v);
+
+	for (int i = 0; i < 10; i++) {
+		veci_add(&v, rand() % 100);
+	}
+
+	veci_print(&v, print_int);
+	veci_free(&v, NULL);
 }

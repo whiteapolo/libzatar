@@ -8,13 +8,16 @@ avlNode *newAvlNode(void *key, void *data)
 	n->height = 1;
 	n->left = NULL;
 	n->right = NULL;
+
 	return n;
 }
 
 int getHeight(const avlNode *node)
 {
-	if (node == NULL)
+	if (node == NULL) {
 		return 0;
+	}
+
 	return node->height;
 }
 
@@ -25,23 +28,33 @@ void updateHeight(avlNode *node)
 
 int getBalanceFactor(const avlNode *node)
 {
-	if (node == NULL)
+	if (node == NULL) {
 		return 0;
+	}
+
 	return getHeight(node->left) - getHeight(node->right);
 }
 
 avlNode *avlGetMin(avlNode *root)
 {
-	while (root->left != NULL)
-		root = root->left;
-	return root;
+	avlNode *curr = root;
+
+	while (curr->left != NULL) {
+		curr = curr->left;
+	}
+
+	return curr;
 }
 
 avlNode *avlGetMax(avlNode *root)
 {
-	while (root->right != NULL)
-		root = root->right;
-	return root;
+	avlNode *curr = root;
+
+	while (curr->right != NULL) {
+		curr = curr->right;
+	}
+
+	return curr;
 }
 
 void leftRotate(avlNode **root)
@@ -87,6 +100,7 @@ void rightLeftRotate(avlNode **root)
 const avlNode *avlFindNode(const avlNode *root, const void *key, int (*cmpKeys)(const void *,const void *))
 {
 	int cmpRes;
+
 	while (root && (cmpRes = cmpKeys(key, root->key))) {
 		if (cmpRes > 0)
 			root = root->right;
