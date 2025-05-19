@@ -6,25 +6,25 @@
 #define LIBZATAR_IMPLEMENTATION
 #include "zatar.h"
 
-Z_VECTOR_DECLARE(VecI, int, veci);
-Z_VECTOR_IMPLEMENT(VecI, int, veci);
-
-void print_int(int a)
-{
-	printf("%d", a);
-}
+Z_VECTOR_DECLARE(Vecd, double, vecd);
+Z_VECTOR_IMPLEMENT(Vecd, double, vecd);
 
 int main(void)
 {
-	srand(time(NULL));
+	Vecd v;
+	vecd_init(&v);
 
-	VecI v;
-	veci_init(&v);
+	vecd_add(&v, 5.0);
 
-	for (int i = 0; i < 10; i++) {
-		veci_add(&v, rand() % 100);
+	Z_Str s;
+
+	if (z_read_whole_file(&s, "main.c") == Z_Err) {
+		return -1;
 	}
 
-	veci_print(&v, print_int);
-	veci_free(&v, NULL);
+	Z_Str_Slice line = z_str_tok_init(s);
+
+	while (z_str_tok_next(s, &line, "\n") == Z_Ok) {
+		z_str_println(line);
+	}
 }
