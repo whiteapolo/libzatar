@@ -1,68 +1,82 @@
 #include "avl_tree.h"
 
-#define AVL_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define CALL_F_IF_NOT_NULL(f, ...) if (f) f(__VA_ARGS__)
 
-#define AVL_NODE_GET_HEIGHT(node) \
-	(node ? node->height : 0)
+// #define Z_AVL_IMPLEMENT(type_name, K, V, prefix)
 
-#define AVL_NODE_UPDATE_HEIGHT(node)                  \
-	do {                                              \
-		(node)->height = 1 + AVL_MAX(                 \
-				AVL_NODE_GET_HEIGHT((node)->right),   \
-				AVL_NODE_GET_HEIGHT((node)->left)     \
-		);                                            \
-	} while (0)
+#define prefix avl
+#define type_name AvlNode
+#define K int
+#define V int
 
-#define AVL_NODE_GET_BALANCE_FACTOR(node)                                   \
-	((node) ?                                                               \
-	 AVL_NODE_GET_HEIGHT((node)->left) - AVL_NODE_GET_HEIGHT((node)->right) \
-	 : 0)
-
-#define AVL_NODE_LEFT_ROTATE(root)                 \
-	do {                                           \
-		avlNode *newRoot = (*(root))->right;       \
-		avlNode *tmp = newRoot->left;              \
-                                                   \
-		newRoot->left = *(root);                   \
-		(*(root))->right = tmp;                    \
-                                                   \
-		AVL_NODE_UPDATE_HEIGHT(newRoot->left);     \
-		AVL_NODE_UPDATE_HEIGHT(newRoot);           \
-                                                   \
-		*(root) = newRoot;                         \
-	} while (0)
-
-#define AVL_NODE_RIGHT_ROTATE(root)                \
-	do {                                           \
-		avlNode *newRoot = (*(root))->left;        \
-		avlNode *tmp = newRoot->right;             \
-                                                   \
-		newRoot->right = *(root);                  \
-		(*(root))->left = tmp;                     \
-                                                   \
-		AVL_NODE_UPDATE_HEIGHT(newRoot->right);    \
-		AVL_NODE_UPDATE_HEIGHT(newRoot);           \
-                                                   \
-		*(root) = newRoot;                         \
-	} while (0)
-
-#define AVL_NODE_LEFT_RIGHT_ROTATE(root)           \
-	do {                                           \
-		AVL_NODE_LEFT_ROTATE(&(*(root))->left);    \
-		AVL_NODE_RIGHT_ROTATE((root));             \
-	} while (0)
-
-#define AVL_NODE_RIGHT_LEFT_ROTATE(root)           \
-	do {                                           \
-	AVL_NODE_RIGHT_ROTATE(&(*(root))->right);      \
-	AVL_NODE_LEFT_ROTATE((root));                  \
-	} while (0)
-
-avlNode *avl_node_new(void *key, void *data)
+int prefix##_get_height(const type_name *node)
 {
-	avlNode *n = malloc(sizeof(avlNode));
+	if (node == NULL) {
+		return 0;
+	}
+
+	return node->height;
+}
+
+void prefix##_update_height(type_name *node)
+{
+	node->height = 1 + max(get_height(node->right), get_height(node->left));
+}
+
+int prefix##_get_balance_factor(const type_name *node)
+{
+	if (node == NULL) {
+		return 0;
+	}
+
+	return get_height(node->left) - get_height(node->right);
+}
+
+void prefix##_left_rotate(type_name **root)
+{
+	type_name *newRoot = (*root)->right;
+	type_name *tmp = newRoot->left;
+
+	newRoot->left = *root;
+	(*root)->right = tmp;
+
+	update_height(newRoot->left);
+	update_height(newRoot);
+
+	*root = newRoot;
+}
+
+void prefix##_right_rotate(type_name **root)
+{
+	type_name *newRoot = (*root)->left;
+	type_name *tmp = newRoot->right;
+
+	newRoot->right = *root;
+	(*root)->left = tmp;
+
+	update_height(newRoot->right);
+	update_height(newRoot);
+
+	*root = newRoot;
+}
+
+void prefix##_left_right_rotate(type_name **root)
+{
+	left_rotate(&(*root)->left);
+	right_rotate(root);
+}
+
+void prefix##_right_left_rotate(type_name **root)
+{
+	right_rotate(&(*root)->right);
+	left_rotate(root);
+}
+
+type_name *prefix##_new(K key, V value)
+{
+	type_name *n = malloc(sizeof(type_name));
 	n->key = key;
-	n->data = data;
+	n->data = value;
 	n->height = 1;
 	n->left = NULL;
 	n->right = NULL;
@@ -70,9 +84,9 @@ avlNode *avl_node_new(void *key, void *data)
 	return n;
 }
 
-avlNode *avl_get_min(avlNode *root)
+type_name *prefix##_get_min(type_name *root)
 {
-	avlNode *curr = root;
+	type_name *curr = root;
 
 	while (curr->left != NULL) {
 		curr = curr->left;
@@ -81,132 +95,133 @@ avlNode *avl_get_min(avlNode *root)
 	return curr;
 }
 
-avlNode *avl_find_node(avlNode *root, void *key, int cmpKeys(void *,void *))
+type_name *prefix##_find_node(type_name *root, K key, int cmp_keys(K, K))
 {
-	int cmp_res;
+	type_name *curr = root;
 
-	while (root && (cmp_res = cmpKeys(key, root->key))) {
+	while (curr != NULL) {
+		int cmp_res = cmp_keys(key, curr->key);
+
 		if (cmp_res > 0) {
-			root = root->right;
+			curr = curr->right;
+		} else if (cmp_res < 0) {
+			curr = curr->left;
 		} else {
-			root = root->left;
+			return curr;
 		}
-	}
-
-	return root;
-}
-
-bool avl_is_exists(avlNode *root, void *key, int cmpKeys(void *,void *))
-{
-	return avl_find_node(root, key, cmpKeys) != NULL;
-}
-
-void *avl_find(avlNode *root, void *key, int cmpKeys(void *,void *))
-{
-	avlNode *node = avl_find_node(root, key, cmpKeys);
-
-	if (node != NULL) {
-		return node->data;
 	}
 
 	return NULL;
 }
 
-void avl_insert(avlNode **root, void *key, void *data, int cmpKeys(void *,void *))
+bool prefix##_is_exists(type_name *root, K key, int cmp_keys(K, K))
+{
+	return avl_find_node(root, key, cmp_keys) != NULL;
+}
+
+V prefix##_avl_find(type_name *root, K key, int cmp_keys(K, K))
+{
+	type_name *node = avl_find_node(root, key, cmp_keys);
+
+	if (node != NULL) {
+		return node->value;
+	}
+
+	return NULL;
+}
+
+void prefix##_put(type_name **root, K key, V value, int cmp_keys(K, K), int free_value(V))
 {
 	if (*root == NULL) {
-		*root = avl_node_new(key, data);
+		*root = avl_node_new(key, value);
 		return;
-	} else if (cmpKeys(key, (*root)->key) > 0) {
-		avl_insert(&(*root)->right, key, data, cmpKeys);
-	} else {
-		avl_insert(&(*root)->left, key, data, cmpKeys);
 	}
 
-	AVL_NODE_UPDATE_HEIGHT(*root);
+	int cmp_res = cmp_keys(key, (*root)->key);
 
-	int bf = AVL_NODE_GET_BALANCE_FACTOR(*root);
+	if (cmp_res > 0) {
+		avl_insert(&(*root)->right, key, value, cmp_keys);
+	} else if (cmp_res < 0) {
+		avl_insert(&(*root)->left, key, value, cmp_keys);
+	} else {
 
-	if (bf > 1 && cmpKeys(key, (*root)->left->key) < 0) {
-		AVL_NODE_RIGHT_ROTATE(root);
-	} else if (bf < -1 && cmpKeys(key, (*root)->right->key) > 0) {
-		AVL_NODE_LEFT_ROTATE(root);
-	} else if (bf > 1 && cmpKeys(key, (*root)->left->key) > 0) {
-		AVL_NODE_LEFT_RIGHT_ROTATE(root);
-	} else if (bf < -1 && cmpKeys(key, (*root)->right->key) < 0) {
-		AVL_NODE_RIGHT_LEFT_ROTATE(root);
+		CALL_F_IF_NOT_NULL(free_value, (*root)->value);
+
+		(*root)->value = value;
+	}
+
+	update_height(*root);
+
+	int bf = get_balance_factor(*root);
+
+	if (bf > 1 && cmp_keys(key, (*root)->left->key) < 0) {
+		right_rotate(root);
+	} else if (bf < -1 && cmp_keys(key, (*root)->right->key) > 0) {
+		left_rotate(root);
+	} else if (bf > 1 && cmp_keys(key, (*root)->left->key) > 0) {
+		left_right_rotate(root);
+	} else if (bf < -1 && cmp_keys(key, (*root)->right->key) < 0) {
+		right_left_rotate(root);
 	}
 }
 
-void avl_remove(avlNode **root, void *key, int cmpKeys(void *,void *), void freeKey(void *), void freeData(void *))
+void prefix##_remove(type_name **root, K key, int cmp_keys(K, K), void free_key(K), void free_value(void *))
 {
 	if (*root == NULL) {
 		return;
-	} else if (cmpKeys(key, (*root)->key) > 0) {
-		avl_remove(&((*root)->right), key, cmpKeys, freeKey, freeData);
-		return;
-	} else if (cmpKeys(key, (*root)->key) < 0) {
-		avl_remove(&((*root)->left), key, cmpKeys, freeKey, freeData);
-		return;
-	} else {
-		if (freeKey) {
-			freeKey((*root)->key);
-		}
-
-		if (freeData) {
-			freeData((*root)->data);
-		}
-
-		if ((*root)->left == NULL) {
-			avlNode *tmp = (*root)->right;
-			free(*root);
-			*root = tmp;
-			return;
-		} else if ((*root)->right == NULL) {
-			avlNode *tmp = (*root)->left;
-			free(*root);
-			*root = tmp;
-			return;
-		}
-
-		avlNode *succesor = avl_get_min((*root)->right);
-
-		(*root)->key = succesor->key;
-		(*root)->data = succesor->data;
-
-		avl_remove(&((*root)->right), succesor->key, cmpKeys, NULL, NULL);
 	}
 
-	AVL_NODE_UPDATE_HEIGHT(*root);
-	int bf = AVL_NODE_GET_BALANCE_FACTOR(*root);
+	int cmp_res = cmp_keys(key, (*root)->key);
 
-	if (bf > 1 && AVL_NODE_GET_BALANCE_FACTOR((*root)->left) >= 0) {
-		AVL_NODE_RIGHT_ROTATE(root);
-	} else if (bf < -1 && AVL_NODE_GET_BALANCE_FACTOR((*root)->right) <= 0) {
-		AVL_NODE_LEFT_ROTATE(root);
-	} else if (bf > 1 && AVL_NODE_GET_BALANCE_FACTOR((*root)->left) < 0) {
-		AVL_NODE_LEFT_RIGHT_ROTATE(root);
-	} else if (bf < -1 && AVL_NODE_GET_BALANCE_FACTOR((*root)->right) > 0) {
-		AVL_NODE_RIGHT_LEFT_ROTATE(root);
+	if (cmp_res > 0) {
+		avl_remove(&((*root)->right), key, cmp_keys, freeKey, free_value);
+		return;
+	}
+
+	if (cmp_res < 0) {
+		avl_remove(&((*root)->left), key, cmp_keys, freeKey, free_value);
+		return;
+	}
+
+	// we reached the node
+
+	CALL_F_IF_NOT_NULL(free_key, (*root)->key);
+	CALL_F_IF_NOT_NULL(free_value, (*root)->value);
+
+	if ((*root)->left == NULL) {
+		type_name *tmp = (*root)->right;
+		free(*root);
+		*root = tmp;
+		return;
+	} else if ((*root)->right == NULL) {
+		type_name *tmp = (*root)->left;
+		free(*root);
+		*root = tmp;
+		return;
+	}
+
+	type_name *succesor = avl_get_min((*root)->right);
+
+	(*root)->key = succesor->key;
+	(*root)->data = succesor->data;
+
+	avl_remove(&((*root)->right), succesor->key, cmp_keys, NULL, NULL);
+
+	update_height(*root);
+	int bf = get_balance_factor(*root);
+
+	if (bf > 1 && get_balance_factor((*root)->left) >= 0) {
+		right_rotate(root);
+	} else if (bf < -1 && get_balace_factor((*root)->right) <= 0) {
+		left_rotate(root);
+	} else if (bf > 1 && get_balace_factor((*root)->left) < 0) {
+		left_right_rotate(root);
+	} else if (bf < -1 && get_balace_factor((*root)->right) > 0) {
+		right_left_rotate(root);
 	}
 }
 
-void avl_update(avlNode *root, void *key, int cmpKeys(void *,void *), void freeData(void *), void *newData)
-{
-	avlNode *node = avl_find_node(root, key, cmpKeys);
-
-	if (node == NULL) {
-		return;
-	}
-
-	if (freeData) {
-		freeData(node->data);
-	}
-
-	node->data = newData;
-}
-
-void avl_order_traverse(avlNode *root, void action(void *key, void *data, void *arg), void *arg)
+void prefix##_order_traverse(type_name *root, void action(K key, V value, void *arg), void *arg)
 {
 	if (root == NULL) {
 		return;
@@ -217,41 +232,36 @@ void avl_order_traverse(avlNode *root, void action(void *key, void *data, void *
     avl_order_traverse(root->right, action, arg);
 }
 
-void printCharNTimes(char c, int n)
+void print_char_n_times(char c, int n)
 {
 	for (int i = 0; i < n; i++) {
 		putchar(c);
 	}
 }
 
-void avl_print(avlNode *root, void print(void *key, void *data, void *arg), void *arg, int padding)
+void prefix##_print(type_name *root, void print(K key, V value, void *arg), void *arg, int padding)
 {
 	if (root == NULL) {
 		return;
 	}
 
-	printCharNTimes(' ', padding);
+	print_char_n_times(' ', padding);
 	print(root->key, root->data, arg);
 	avl_print(root->right, print, arg, padding + 4);
 	avl_print(root->left, print, arg, padding + 4);
 }
 
-void avl_free(avlNode *root, void freeKey(void *), void freeData(void *))
+void prefix##_free(type_name *root, void free_key(K), void free_value(V))
 {
 	if (root == NULL) {
 		return;
 	}
 
-	if (freeKey) {
-		freeKey(root->key);
-	}
+	CALL_F_IF_NOT_NULL(free_key, root->key);
+	CALL_F_IF_NOT_NULL(free_value, root->value);
 
-	if (freeData) {
-		freeData(root->data);
-	}
-
-	avl_free(root->left, freeKey, freeData);
-	avl_free(root->right, freeKey, freeData);
+	avl_free(root->left, free_key, free_value);
+	avl_free(root->right, free_key, free_value);
 
 	free(root);
 }
