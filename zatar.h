@@ -303,7 +303,7 @@ typedef struct type_name {                                             \
     struct type_name *right;                                           \
     K key;                                                             \
     V value;                                                           \
-    int height;                                                        \
+    char height;                                                       \
 } type_name;                                                           \
                                                                        \
 void prefix##_put(type_name **root,                                    \
