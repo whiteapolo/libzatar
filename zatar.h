@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <errno.h>
 
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
@@ -698,6 +699,8 @@ Z_Result z_read_file(const char *pathname, const char *fmt, ...);
 Z_Result z_redirect_fd(int src_fd, const char *dst_pathname);
 Z_Result z_popen2(char *path, char *argv[], FILE *ppipe[2]);
 
+bool z_mkdir(const char *pathname);
+
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
 //   *       *       *       *       *       *       *        *        *
@@ -771,7 +774,7 @@ Z_Result z_read_whole_file(Z_Str *s, const char *pathname);
     printf("[" Z_COLOR_RED "ERROR" Z_COLOR_RESET "] " fmt "\n", ##__VA_ARGS__)
 
 #define z_print_warning(fmt, ...) \
-    printf("[" Z_COLOR_YELLOW "INFO" Z_COLOR_RESET "] " fmt "\n", ##__VA_ARGS__)
+    printf("[" Z_COLOR_YELLOW "WARNING" Z_COLOR_RESET "] " fmt "\n", ##__VA_ARGS__)
 
 #define z_print_info(fmt, ...) \
     printf("[" Z_COLOR_GREEN "INFO" Z_COLOR_RESET "] " fmt "\n", ##__VA_ARGS__)
@@ -1318,6 +1321,21 @@ Z_Result z_popen2(char *pathname, char *argv[], FILE *ppipe[2])
     }
 
     return Z_Ok;
+}
+
+bool z_mkdir(const char *pathname)
+{
+    int status = mkdir(pathname, 0777);
+
+    if (status == 0) {
+        return true;
+    } else if (errno == EEXIST) {
+        z_print_warning("cannot create directory ‘%s’: File exists", pathname);
+    } else {
+        z_print_error("%s", strerror(errno));
+    }
+
+    return false;
 }
 
 //   *       *       *       *       *       *       *        *        *
