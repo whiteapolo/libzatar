@@ -31,6 +31,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <stdbool.h>
 
 typedef int8_t   i8;
 typedef int16_t  i16;

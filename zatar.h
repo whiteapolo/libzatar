@@ -73,6 +73,12 @@ int z_min3(int a, int b, int c);
         }                                                                              \
     } while (0)
 
+#define z_null_terminate(da)                                   \
+    do {                                                       \
+        z_ensure_capacity((da), (da)->len + 1);                \
+        memset(&(da)->ptr[(da)->len], 0, sizeof(*(da)->ptr));  \
+    } while(0)
+
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
 //   *       *       *       *       *       *       *        *        *
@@ -778,8 +784,10 @@ typedef struct {
     int capacity;
 } Z_Cmd;
 
-bool z_should_rebuild(const char *target, const char *dependency);
-void z_rebuild_yourself(char **argv, const char *executable_pathname);
+bool _z_should_rebuild(const char *target, ...);
+bool z_should_rebuild_va(const char *target, va_list ap);
+#define z_should_rebuild(target, ...) _z_should_rebuild(target, ##__VA_ARGS__, NULL)
+void z_rebuild_yourself(const char *src_pathname, const char *executable_pathname);
 void z_cmd_init(Z_Cmd *cmd);
 #define z_cmd_append(cmd, ...) _z_cmd_append(cmd, __VA_ARGS__, NULL)
 void _z_cmd_append(Z_Cmd *cmd, ...);
@@ -1507,27 +1515,61 @@ Z_Result z_read_whole_file(Z_Str *s, const char *pathname)
 //       *       *       *       *       *       *        *        *
 //   *       *       *       *       *       *       *        *        *
 
-bool z_should_rebuild(const char *target, const char *dependency)
+bool _z_should_rebuild(const char *target, ...)
 {
+    va_list ap;
+    va_start(ap, target);
+    bool should_rebuild = z_should_rebuild_va(target, ap);
+    va_end(ap);
+
+    return should_rebuild;
+}
+
+bool z_should_rebuild_va(const char *target, va_list ap)
+{
+    va_list ap1;
+    va_copy(ap1, ap);
+
 	struct stat target_stat;
 	struct stat dependency_stat;
 
-	if (stat(target, &target_stat)) {
-		return true;
-	}
+    if (stat(target, &target_stat)) {
+        return true;
+    }
 
-	if (stat(dependency, &dependency_stat)) {
-		return false;
-	}
+    const char *dependency = va_arg(ap, const char *);
 
-	return target_stat.st_mtim.tv_sec < dependency_stat.st_mtim.tv_sec;
+    while (dependency) {
+        if (stat(dependency, &dependency_stat)) {
+            z_print_error("cannot access '%s': No such file", dependency);
+            va_end(ap1);
+            return false;
+        } else if (target_stat.st_mtim.tv_sec < dependency_stat.st_mtim.tv_sec) {
+            va_end(ap1);
+            return true;
+        }
+
+        dependency = va_arg(ap, const char *);
+    }
+
+    return false;
 }
 
-void z_rebuild_yourself(char **argv, const char *executable_pathname)
+void z_rebuild_yourself(const char *src_pathname, const char *executable_pathname)
 {
-    if (z_should_rebuild(argv[0], executable_pathname)) {
-        z_run_async("cc", argv[0], "-o", executable_pathname);
+    if (!z_should_rebuild(executable_pathname, src_pathname, __FILE__)) {
+        return;
     }
+
+    int status;
+    status = z_run_async("cc", src_pathname, "-o", executable_pathname);
+
+    if (status != 0) {
+        exit(status);
+    }
+
+    status = z_run_async(executable_pathname);
+    exit(status);
 }
 
 void z_cmd_init(Z_Cmd *cmd)
@@ -1584,29 +1626,26 @@ void z_cmd_print(const Z_Cmd *cmd)
 
 int z_cmd_run_async(Z_Cmd *cmd)
 {
-	// add NULL termintator
-    z_ensure_capacity(cmd, cmd->len + 1);
-	cmd->ptr[cmd->len] = NULL;
-
+    z_null_terminate(cmd);
 	z_cmd_print(cmd);
 
 	pid_t pid = fork();
-	int exit_code;
+	int status = 0;
 
 	if (pid == -1) {
 		z_print_error("fork couln't create child");
 	} else if (pid == 0) {
 		execvp(cmd->ptr[0], cmd->ptr);
 	} else {
-		waitpid(pid, &exit_code, 0);
+		waitpid(pid, &status, 0);
 	}
 
-	if (exit_code != 0) {
+	if (status != 0) {
 		z_print_error(Z_COLOR_RED "exited abnormally " Z_COLOR_RESET
-                "with code " Z_COLOR_RED "%d" Z_COLOR_RESET, exit_code);
+                "with code " Z_COLOR_RED "%d" Z_COLOR_RESET, status);
 	}
 
-	return exit_code;
+	return status;
 }
 
 int _z_run_async(const char *arg, ...)
@@ -1644,7 +1683,6 @@ void z_cmd_clear(Z_Cmd *cmd)
 
     cmd->len = 0;
 }
-
 //   $       $       $       $       $       $       $        $        $
 //       $       $       $       $       $       $        $        $
 //   $       $       $       $       $       $       $        $        $
