@@ -63,8 +63,8 @@ int z_min3(int a, int b, int c);
 
 #define z_ensure_capacity(da, cap)                                                     \
     do {                                                                               \
-        int new_capacity = z_max((cap), (da)->capacity * Z_DEFAULT_GROWTH_RATE);       \
-        if (new_capacity > (da)->capacity) {                                           \
+        if ((da)->capacity < (cap)) {                                                      \
+            int new_capacity = z_max((cap), (da)->capacity * Z_DEFAULT_GROWTH_RATE);   \
             (da)->capacity = new_capacity;                                             \
             (da)->ptr = realloc((da)->ptr, sizeof((da)->ptr[0]) * (da)->capacity);     \
         }                                                                              \
@@ -780,8 +780,8 @@ typedef struct {                  \
 //   *       *       *       *       *       *       *        *        *
 
 typedef enum {
-    Read = 0,
-    Write = 1,
+    Z_Pipe_Mode_Read = 0,
+    Z_Pipe_Mode_Write = 1,
 } Z_Pipe_Mode;
 
 const char *z_get_path_extention(const char *path);
@@ -861,6 +861,7 @@ void z_str_println(Z_Str_Slice s);
 void z_str_free(Z_Str s);
 void z_str_free_ptr(Z_Str *s);
 void z_str_clear(Z_Str *s);
+Z_Str z_str_get_line(FILE *fp);
 Z_Result z_read_whole_file(Z_Str *s, const char *pathname);
 
 //   *       *       *       *       *       *       *        *        *
@@ -1414,17 +1415,17 @@ Z_Result z_popen2(char *pathname, char *argv[], FILE *ppipe[2])
 
     if (pid) {
         // parent
-        close(output[Write]);
-        ppipe[Write] = fdopen(input[Write], "w");
-        ppipe[Read] = fdopen(output[Read], "r");
+        close(output[Z_Pipe_Mode_Write]);
+        ppipe[Z_Pipe_Mode_Write] = fdopen(input[Z_Pipe_Mode_Write], "w");
+        ppipe[Z_Pipe_Mode_Read] = fdopen(output[Z_Pipe_Mode_Read], "r");
     } else {
         // child
-        dup2(input[Read], STDIN_FILENO);
-        dup2(output[Write], STDOUT_FILENO);
-        close(input[Write]);
-        close(input[Read]);
-        close(output[Write]);
-        close(output[Read]);
+        dup2(input[Z_Pipe_Mode_Read], STDIN_FILENO);
+        dup2(output[Z_Pipe_Mode_Write], STDOUT_FILENO);
+        close(input[Z_Pipe_Mode_Write]);
+        close(input[Z_Pipe_Mode_Read]);
+        close(output[Z_Pipe_Mode_Write]);
+        close(output[Z_Pipe_Mode_Read]);
         execvp(pathname, argv);
         exit(EXIT_FAILURE);
     }
@@ -1631,6 +1632,22 @@ void z_str_clear(Z_Str *s)
 {
     s->len = 0;
     z_null_terminate(s);
+}
+
+Z_Str z_str_get_line(FILE *fp)
+{
+    Z_Str s;
+    s.ptr = NULL;
+    size_t capacity = 0;
+
+    s.len = getline(&s.ptr, &capacity, fp);
+    s.capacity = capacity;
+
+	if (s.len > 0 && z_str_top_c(&s) == '\n') {
+        z_str_pop_c(&s);
+    }
+
+    return s;
 }
 
 Z_Result z_read_whole_file(Z_Str *s, const char *pathname)
