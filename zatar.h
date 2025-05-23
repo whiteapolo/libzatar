@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <errno.h>
+#include <assert.h>
 
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
@@ -1557,17 +1558,14 @@ int z_str_cmp(Z_Str_Slice s1, Z_Str_Slice s2)
     } else if (s1.len < s2.len) {
         return -1;
     } else {
-        return memcmp(s1.ptr, s2.ptr. s1.len);
+        return memcmp(s1.ptr, s2.ptr, s1.len);
     }
 }
 
 int z_str_n_cmp(Z_Str_Slice s1, Z_Str_Slice s2, int n)
 {
-    if (s1.len < n || s2.len < n) {
-        return;
-    }
-
-    return memcmp(s1.ptr, s2.ptr. n);
+    assert(s1.len >= n && s2.len >= n);
+    return memcmp(s1.ptr, s2.ptr, n);
 }
 
 Z_Str_Slice z_str_tok_init(Z_Str_Slice s)
