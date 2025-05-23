@@ -357,7 +357,7 @@ int prefix##_get_height(const type_name *node)                                \
                                                                               \
 void prefix##_update_height(type_name *node)                                  \
 {                                                                             \
-    node->height = 1 + max(                                                   \
+    node->height = 1 + z_max(                                                 \
             prefix##_get_height(node->right),                                 \
             prefix##_get_height(node->left)                                   \
     );                                                                        \
@@ -458,7 +458,7 @@ bool prefix##_is_exists(type_name *root,                                      \
                         K key,                                                \
                         int cmp_keys(K, K))                                   \
 {                                                                             \
-    return avl_find_node(root, key, cmp_keys) != NULL;                        \
+    return prefix##_find_node(root, key, cmp_keys) != NULL;                        \
 }                                                                             \
                                                                               \
 bool prefix##_find(type_name *root,                                           \
@@ -466,7 +466,7 @@ bool prefix##_find(type_name *root,                                           \
                 int cmp_keys(K, K),                                           \
                 V *value)                                                     \
 {                                                                             \
-    type_name *node = avl_find_node(root, key, cmp_keys);                     \
+    type_name *node = prefix##_find_node(root, key, cmp_keys);                     \
                                                                               \
     if (node != NULL) {                                                       \
         *value = node->value;                                                 \
@@ -526,12 +526,12 @@ void prefix##_remove(type_name **root,                                        \
     int cmp_res = cmp_keys(key, (*root)->key);                                \
                                                                               \
     if (cmp_res > 0) {                                                        \
-        avl_remove(&((*root)->right), key, cmp_keys, free_key, free_value);   \
+        prefix##_remove(&((*root)->right), key, cmp_keys, free_key, free_value);   \
         return;                                                               \
     }                                                                         \
                                                                               \
     if (cmp_res < 0) {                                                        \
-        avl_remove(&((*root)->left), key, cmp_keys, free_key, free_value);    \
+        prefix##_remove(&((*root)->left), key, cmp_keys, free_key, free_value);    \
         return;                                                               \
     }                                                                         \
                                                                               \
@@ -581,10 +581,10 @@ void prefix##_order_traverse(type_name *root,                                 \
         return;                                                               \
     }                                                                         \
                                                                               \
-    avl_order_traverse(root->left, action, arg);                              \
+    prefix##_order_traverse(root->left, action, arg);                              \
                                                                               \
     action(root->key, root->value, arg);                                      \
-    avl_order_traverse(root->right, action, arg);                             \
+    prefix##_order_traverse(root->right, action, arg);                             \
 }                                                                             \
                                                                               \
 void print_char_n_times(char c, int n)                                        \
@@ -604,8 +604,8 @@ void prefix##_print(type_name *root,                                          \
                                                                               \
     print_char_n_times(' ', padding);                                         \
     print(root->key, root->value, arg);                                       \
-    avl_print(root->right, print, arg, padding + 4);                          \
-    avl_print(root->left, print, arg, padding + 4);                           \
+    prefix##_print(root->right, print, arg, padding + 4);                          \
+    prefix##_print(root->left, print, arg, padding + 4);                           \
 }                                                                             \
                                                                               \
 void prefix##_free(type_name *root,                                           \
@@ -619,11 +619,110 @@ void prefix##_free(type_name *root,                                           \
     CALL_F_IF_NOT_NULL(free_key, root->key);                                  \
     CALL_F_IF_NOT_NULL(free_value, root->value);                              \
                                                                               \
-    avl_free(root->left, free_key, free_value);                               \
-    avl_free(root->right, free_key, free_value);                              \
+    prefix##_free(root->left, free_key, free_value);                               \
+    prefix##_free(root->right, free_key, free_value);                              \
                                                                               \
     free(root);                                                               \
 }
+
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   map header
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+
+
+#define Z_MAP_DECLARE(type_name, K, V, prefix)                         \
+                                                                       \
+Z_AVL_DECLARE(_avl_##type_name, K, V, _avl_##prefix);                  \
+                                                                       \
+typedef struct {                                                       \
+    _avl_##type_name *root;                                            \
+    int (*cmp_keys)(K, K);                                             \
+} type_name;                                                           \
+                                                                       \
+void prefix##_init(type_name *m, int cmp_keys(K, K));                  \
+                                                                       \
+void prefix##_put(type_name *m,                                        \
+                  K key,                                               \
+                  V value,                                             \
+                  void free_value(V));                                 \
+                                                                       \
+bool prefix##_find(const type_name *m, K key, V *value);               \
+                                                                       \
+bool prefix##_is_exists(const type_name *m, K key);                    \
+                                                                       \
+void prefix##_remove(type_name *m, K key,                              \
+                     void free_key(K),                                 \
+                     void free_value(V));                              \
+                                                                       \
+void prefix##_order_traverse(const type_name *m,                       \
+                             void action(K key, V value, void *arg),   \
+                             void *arg);                               \
+                                                                       \
+void prefix##_free(type_name *m,                                       \
+                   void free_key(K),                                   \
+                   void free_value(V));
+
+#define Z_MAP_IMPLEMENT(type_name, K, V, prefix)                       \
+                                                                       \
+Z_AVL_IMPLEMENT(_avl_##type_name, K, V, _avl_##prefix);                \
+                                                                       \
+void prefix##_init(type_name *m, int cmp_keys(K, K))                   \
+{                                                                      \
+    m->cmp_keys = cmp_keys;                                            \
+    m->root = NULL;                                                    \
+}                                                                      \
+                                                                       \
+void prefix##_put(type_name *m,                                        \
+                  K key,                                               \
+                  V value,                                             \
+                  void free_value(V))                                  \
+{                                                                      \
+    _avl_##prefix##_put(&m->root, key, value, m->cmp_keys, free_value);             \
+}                                                                      \
+                                                                       \
+bool prefix##_find(const type_name *m, K key, V *value)                \
+{                                                                      \
+    return _avl_##prefix##_find(m->root, key, m->cmp_keys, value);                 \
+}                                                                      \
+                                                                       \
+bool prefix##_is_exists(const type_name *m, K key)                     \
+{                                                                      \
+    return _avl_##prefix##_is_exists(m->root, key, m->cmp_keys);                   \
+}                                                                      \
+                                                                       \
+void prefix##_remove(type_name *m, K key,                              \
+                     void free_key(K),                                 \
+                     void free_value(V))                               \
+{                                                                      \
+    _avl_##prefix##_remove(&m->root, key, m->cmp_keys, free_key, free_value);       \
+}                                                                      \
+                                                                       \
+void prefix##_order_traverse(const type_name *m,                       \
+                             void action(K key, V value, void *arg),   \
+                             void *arg)                                \
+{                                                                      \
+    _avl_##prefix##_order_traverse(m->root, action, arg);              \
+}                                                                      \
+                                                                       \
+void prefix##_free(type_name *m,                                       \
+                   void free_key(K),                                   \
+                   void free_value(V))                                 \
+{                                                                      \
+    _avl_##prefix##_free(m->root, free_key, free_value);               \
+}
+
 
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
