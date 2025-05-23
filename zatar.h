@@ -1,12 +1,7 @@
 /*
  *           --Libzatar--
  *
- *         Data Structures:
- *            - Vector
- *
- *
- *
- *            #define LIBZATAR_IMPLEMENTATION
+ *  #define LIBZATAR_IMPLEMENTATION
  */
 #ifndef LIBZATAR_H
 #define LIBZATAR_H
@@ -775,6 +770,9 @@ Z_Result z_read_whole_file(Z_Str *s, const char *pathname);
 #define z_print_error(fmt, ...)	\
     printf("[" Z_COLOR_RED "ERROR" Z_COLOR_RESET "] " fmt "\n", ##__VA_ARGS__)
 
+#define z_print_warning(fmt, ...) \
+    printf("[" Z_COLOR_YELLOW "INFO" Z_COLOR_RESET "] " fmt "\n", ##__VA_ARGS__)
+
 #define z_print_info(fmt, ...) \
     printf("[" Z_COLOR_GREEN "INFO" Z_COLOR_RESET "] " fmt "\n", ##__VA_ARGS__)
 
@@ -1398,6 +1396,7 @@ void z_str_push_c(Z_Str *s, char c)
 {
     z_ensure_capacity(s, s->len + 1);
     s->ptr[s->len++] = c;
+    z_null_terminate(s);
 }
 
 char z_str_top_c(Z_Str *s)

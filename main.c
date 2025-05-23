@@ -8,5 +8,8 @@
 
 int main(void)
 {
+    Z_Str s = z_str_new("");
+    z_str_push_c(&s, 'a');
 
+    z_str_println(s);
 }
