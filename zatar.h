@@ -845,6 +845,8 @@ void z_str_push_str(Z_Str *dst, const Z_Str_Slice src);
 int z_str_len(Z_Str_Slice s);
 bool z_str_is_empty(Z_Str_Slice s);
 
+int z_str_cmp(Z_Str_Slice s1, Z_Str_Slice s2);
+
 Z_Str_Slice z_str_tok_init(Z_Str_Slice s);
 Z_Result z_str_tok_next(Z_Str_Slice s, Z_Str_Slice *slice, const char *delim);
 
@@ -1545,6 +1547,17 @@ bool z_str_is_empty(Z_Str_Slice s)
     return s.len == 0;
 }
 
+int z_str_cmp(Z_Str_Slice s1, Z_Str_Slice s2)
+{
+    if (s1.len > s2.len) {
+        return 1;
+    } else if (s1.len < s2.len) {
+        return -1;
+    } else {
+        return memcmp(s1.ptr, s2.ptr. s1.len);
+    }
+}
+
 Z_Str_Slice z_str_tok_init(Z_Str_Slice s)
 {
     Z_Str_Slice slice = {
@@ -1688,8 +1701,8 @@ void z_rebuild_yourself(const char *src_pathname, const char *executable_pathnam
         exit(status);
     }
 
-    status = z_run_async(executable_pathname);
-    exit(status);
+	status = execl(executable_pathname, executable_pathname, NULL);
+    exit(1);
 }
 
 void z_cmd_init(Z_Cmd *cmd)
@@ -1755,7 +1768,7 @@ int z_cmd_run_async(Z_Cmd *cmd)
 	if (pid == -1) {
 		z_print_error("fork couln't create child");
 	} else if (pid == 0) {
-		execvp(cmd->ptr[0], cmd->ptr);
+		exit(execvp(cmd->ptr[0], cmd->ptr));
 	} else {
 		waitpid(pid, &status, 0);
 	}
