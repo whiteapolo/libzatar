@@ -689,24 +689,28 @@ void prefix##_put(type_name *m,                                        \
                   V value,                                             \
                   void free_value(V))                                  \
 {                                                                      \
-    _avl_##prefix##_put(&m->root, key, value, m->cmp_keys, free_value);             \
+    _avl_##prefix##_put(&m->root, key, value, m->cmp_keys, free_value);\
 }                                                                      \
                                                                        \
 bool prefix##_find(const type_name *m, K key, V *value)                \
 {                                                                      \
-    return _avl_##prefix##_find(m->root, key, m->cmp_keys, value);                 \
+    return _avl_##prefix##_find(m->root, key, m->cmp_keys, value);     \
 }                                                                      \
                                                                        \
 bool prefix##_is_exists(const type_name *m, K key)                     \
 {                                                                      \
-    return _avl_##prefix##_is_exists(m->root, key, m->cmp_keys);                   \
+    return _avl_##prefix##_is_exists(m->root, key, m->cmp_keys);       \
 }                                                                      \
                                                                        \
 void prefix##_remove(type_name *m, K key,                              \
                      void free_key(K),                                 \
                      void free_value(V))                               \
 {                                                                      \
-    _avl_##prefix##_remove(&m->root, key, m->cmp_keys, free_key, free_value);       \
+    _avl_##prefix##_remove(&m->root,                                   \
+            key,                                                       \
+            m->cmp_keys,                                               \
+            free_key,                                                  \
+            free_value);                                               \
 }                                                                      \
                                                                        \
 void prefix##_order_traverse(const type_name *m,                       \
