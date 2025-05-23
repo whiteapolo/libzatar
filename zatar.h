@@ -846,6 +846,7 @@ int z_str_len(Z_Str_Slice s);
 bool z_str_is_empty(Z_Str_Slice s);
 
 int z_str_cmp(Z_Str_Slice s1, Z_Str_Slice s2);
+int z_str_n_cmp(Z_Str_Slice s1, Z_Str_Slice s2, int n);
 
 Z_Str_Slice z_str_tok_init(Z_Str_Slice s);
 Z_Result z_str_tok_next(Z_Str_Slice s, Z_Str_Slice *slice, const char *delim);
@@ -1556,6 +1557,15 @@ int z_str_cmp(Z_Str_Slice s1, Z_Str_Slice s2)
     } else {
         return memcmp(s1.ptr, s2.ptr. s1.len);
     }
+}
+
+int z_str_n_cmp(Z_Str_Slice s1, Z_Str_Slice s2, int n)
+{
+    if (s1.len < n || s2.len < n) {
+        return;
+    }
+
+    return memcmp(s1.ptr, s2.ptr. n);
 }
 
 Z_Str_Slice z_str_tok_init(Z_Str_Slice s)
