@@ -1630,6 +1630,7 @@ void z_str_free_ptr(Z_Str *s)
 void z_str_clear(Z_Str *s)
 {
     s->len = 0;
+    z_null_terminate(s);
 }
 
 Z_Result z_read_whole_file(Z_Str *s, const char *pathname)
