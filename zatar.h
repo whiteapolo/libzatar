@@ -857,7 +857,9 @@ void z_str_trim_cset(Z_Str *s, const char *cset);
 
 void z_str_print(Z_Str_Slice s);
 void z_str_println(Z_Str_Slice s);
-void z_str_free(Z_Str *s);
+void z_str_free(Z_Str s);
+void z_str_free_ptr(Z_Str *s);
+void z_str_clear(Z_Str *s);
 Z_Result z_read_whole_file(Z_Str *s, const char *pathname);
 
 //   *       *       *       *       *       *       *        *        *
@@ -1617,9 +1619,19 @@ void z_str_println(Z_Str_Slice s)
     printf("%.*s\n", s.len, s.ptr);
 }
 
-void z_str_free(Z_Str *s)
+void z_str_free(Z_Str s)
+{
+    free(s.ptr);
+}
+
+void z_str_free_ptr(Z_Str *s)
 {
     free(s->ptr);
+}
+
+void z_str_clear(Z_Str *s)
+{
+    s->len = 0;
 }
 
 Z_Result z_read_whole_file(Z_Str *s, const char *pathname)
