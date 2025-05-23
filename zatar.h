@@ -22,6 +22,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -749,6 +750,46 @@ void z_str_println(Z_Str_Slice s);
 void z_str_free(Z_Str *s);
 Z_Result z_read_whole_file(Z_Str *s, const char *pathname);
 
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   cmd header
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+
+#define z_print_error(fmt, ...)	\
+    printf("[" Z_COLOR_RED "ERROR" Z_COLOR_RESET "] " fmt "\n", ##__VA_ARGS__)
+
+#define z_print_info(fmt, ...) \
+    printf("[" Z_COLOR_GREEN "INFO" Z_COLOR_RESET "] " fmt "\n", ##__VA_ARGS__)
+
+typedef struct {
+	char **ptr;
+	int len;
+    int capacity;
+} Z_Cmd;
+
+bool z_should_rebuild(const char *target, const char *dependency);
+void z_rebuild_yourself(char **argv, const char *executable_pathname);
+void z_cmd_init(Z_Cmd *cmd);
+#define z_cmd_append(cmd, ...) _z_cmd_append(cmd, __VA_ARGS__, NULL)
+void _z_cmd_append(Z_Cmd *cmd, ...);
+void z_cmd_append_va(Z_Cmd *cmd, va_list ap);
+int z_cmd_run_async(Z_Cmd *cmd);
+int _z_run_async(const char *arg, ...);
+#define z_run_async(arg, ...) _z_run_async(arg, ##__VA_ARGS__, NULL)
+void z_cmd_free(Z_Cmd *cmd);
+void z_cmd_clear(Z_Cmd *cmd);
+
 //   $       $       $       $       $       $       $        $        $
 //       $       $       $       $       $       $        $        $
 //   $       $       $       $       $       $       $        $        $
@@ -1448,6 +1489,160 @@ Z_Result z_read_whole_file(Z_Str *s, const char *pathname)
     fclose(fp);
 
     return Z_Ok;
+}
+
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//
+//
+//   cmd implementation
+//
+//
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+//       *       *       *       *       *       *        *        *
+//   *       *       *       *       *       *       *        *        *
+
+bool z_should_rebuild(const char *target, const char *dependency)
+{
+	struct stat target_stat;
+	struct stat dependency_stat;
+
+	if (stat(target, &target_stat)) {
+		return true;
+	}
+
+	if (stat(dependency, &dependency_stat)) {
+		return false;
+	}
+
+	return target_stat.st_mtim.tv_sec < dependency_stat.st_mtim.tv_sec;
+}
+
+void z_rebuild_yourself(char **argv, const char *executable_pathname)
+{
+    if (z_should_rebuild(argv[0], executable_pathname)) {
+        z_run_async("cc", argv[0], "-o", executable_pathname);
+    }
+}
+
+void z_cmd_init(Z_Cmd *cmd)
+{
+    cmd->ptr = NULL;
+    cmd->len = 0;
+    cmd->capacity = 0;
+}
+
+void _z_cmd_append(Z_Cmd *cmd, ...)
+{
+	va_list ap;
+    va_start(ap, cmd);
+    z_cmd_append_va(cmd, ap);
+	va_end(ap);
+}
+
+void z_cmd_append_va(Z_Cmd *cmd, va_list ap)
+{
+	va_list ap1;
+    va_copy(ap1, ap);
+
+	const char *arg = va_arg(ap1, const char *);
+
+	while (arg) {
+        z_ensure_capacity(cmd, cmd->len + 1);
+		cmd->ptr[cmd->len++] = strdup(arg);
+		arg = va_arg(ap1, const char *);
+	}
+
+	va_end(ap1);
+}
+
+void z_cmd_print_arg(const char *arg)
+{
+	if (strchr(arg, ' ')) {
+		printf("'%s'", arg);
+	} else {
+		printf("%s", arg);
+	}
+}
+
+void z_cmd_print(const Z_Cmd *cmd)
+{
+	printf("[" Z_COLOR_GREEN "CMD" Z_COLOR_RESET "]");
+
+	for (int i = 0; i < cmd->len; i++) {
+		printf(" ");
+		z_cmd_print_arg(cmd->ptr[i]);
+	}
+
+	printf("\n");
+}
+
+int z_cmd_run_async(Z_Cmd *cmd)
+{
+	// add NULL termintator
+    z_ensure_capacity(cmd, cmd->len + 1);
+	cmd->ptr[cmd->len] = NULL;
+
+	z_cmd_print(cmd);
+
+	pid_t pid = fork();
+	int exit_code;
+
+	if (pid == -1) {
+		z_print_error("fork couln't create child");
+	} else if (pid == 0) {
+		execvp(cmd->ptr[0], cmd->ptr);
+	} else {
+		waitpid(pid, &exit_code, 0);
+	}
+
+	if (exit_code != 0) {
+		z_print_error(Z_COLOR_RED "exited abnormally " Z_COLOR_RESET
+                "with code " Z_COLOR_RED "%d" Z_COLOR_RESET, exit_code);
+	}
+
+	return exit_code;
+}
+
+int _z_run_async(const char *arg, ...)
+{
+	va_list ap;
+	va_start(ap, arg);
+
+	Z_Cmd cmd;
+	z_cmd_init(&cmd);
+	z_cmd_append(&cmd, arg);
+	z_cmd_append_va(&cmd, ap);
+
+	int status = z_cmd_run_async(&cmd);
+
+    z_cmd_free(&cmd);
+	va_end(ap);
+
+	return status;
+}
+
+void z_cmd_free(Z_Cmd *cmd)
+{
+    for (int i = 0; i < cmd->len; i++) {
+        free(cmd->ptr[i]);
+    }
+
+    free(cmd->ptr);
+}
+
+void z_cmd_clear(Z_Cmd *cmd)
+{
+    for (int i = 0; i < cmd->len; i++) {
+        free(cmd->ptr[i]);
+    }
+
+    cmd->len = 0;
 }
 
 //   $       $       $       $       $       $       $        $        $
