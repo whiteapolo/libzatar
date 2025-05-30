@@ -14,7 +14,7 @@ int main(void)
     Map m;
     map_init(&m, (int (*)(char *, char *))strcmp);
 
-    map_put(&m, strdup("Hello"), strdup("bye"), (void (*)(char *))free);
+    map_put(&m, strdup("Hello"), strdup("bye"), (void (*)(char *))free, (void (*)(char *))free);
 
     char *x;
     if (map_find(&m, "Hello", &x)) {

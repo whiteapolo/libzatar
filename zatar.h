@@ -815,48 +815,45 @@ typedef struct {                  \
 //       *       *       *       *       *       *        *        *
 //   *       *       *       *       *       *       *        *        *
 
-
 typedef struct {
     char *ptr;
     int len;
     int capacity;
-} Z_Str;
+} Z_String;
 
-typedef Z_Str Z_Str_Slice;
+typedef struct {
+    const char *ptr;
+    int len;
+} Z_String_View;
 
-Z_Str z_str_new(const char *fmt, ...);
-Z_Str z_str_new_va(const char *fmt, va_list ap);
+#define Z_SV(p, l)          ((Z_String_View){ .ptr = p, .len = l })
+#define Z_STR_TO_SV(s)      ((Z_String_View){ .ptr = s.ptr, .len = s.len })
+#define Z_CSTR_TO_SV(s)     ((Z_String_View){ .ptr = s, .len = strlen(s) })
+#define Z_EMPTY_SV()        ((Z_String_View){ .ptr = NULL, .len = 0 })
 
-void z_str_init(Z_Str *s, const char *fmt, ...);
-void z_str_init_va(Z_Str *s, const char *fmt, va_list ap);
+Z_String z_str_new(const char *fmt, ...);
+Z_String z_str_new_va(const char *fmt, va_list ap);
+void z_str_pushf(Z_String *s, const char *fmt, ...);
+void z_str_pushf_va(Z_String *s, const char *fmt, va_list ap);
+void z_str_push(Z_String *dst, Z_String_View src);
+void z_str_push_c(Z_String *s, char c);
+char z_str_pop_c(Z_String *s);
+char z_str_top_c(Z_String_View s);
+int z_str_cmp(Z_String_View s1, Z_String_View s2);
+int z_str_n_cmp(Z_String_View s1, Z_String_View s2, int n);
+void z_str_replace(Z_String *s, Z_String_View target, Z_String_View replacement);
 
-void z_str_push(Z_Str *s, const char *fmt, ...);
-void z_str_push_va(Z_Str *s, const char *fmt, va_list ap);
-void z_str_push_c(Z_Str *s, char c);
-char z_str_top_c(Z_Str *s);
-char z_str_pop_c(Z_Str *s);
-void z_str_push_str(Z_Str *dst, const Z_Str_Slice src);
+void z_str_trim(Z_String *s);
+void z_str_trim_cset(Z_String *s, Z_String_View cset);
+Z_String_View z_str_view_trim(Z_String_View s);
+Z_String_View z_str_view_trim_cset(Z_String_View s, Z_String_View cset);
 
-int z_str_len(Z_Str_Slice s);
-bool z_str_is_empty(Z_Str_Slice s);
+void z_str_print(Z_String_View s);
+void z_str_println(Z_String_View s);
+void z_str_free(Z_String *s);
+void z_str_clear(Z_String *s);
 
-int z_str_cmp(Z_Str_Slice s1, Z_Str_Slice s2);
-int z_str_n_cmp(Z_Str_Slice s1, Z_Str_Slice s2, int n);
-
-Z_Str_Slice z_str_tok_init(Z_Str_Slice s);
-Z_Result z_str_tok_next(Z_Str_Slice s, Z_Str_Slice *slice, const char *delim);
-
-void z_str_replace(Z_Str *s, const char *target, const char *replacement);
-void z_str_trim(Z_Str *s);
-void z_str_trim_cset(Z_Str *s, const char *cset);
-
-void z_str_print(Z_Str_Slice s);
-void z_str_println(Z_Str_Slice s);
-void z_str_free(Z_Str s);
-void z_str_free_ptr(Z_Str *s);
-void z_str_clear(Z_Str *s);
-Z_Str z_str_get_line(FILE *fp);
-Z_Result z_read_whole_file(Z_Str *s, const char *pathname);
+Z_String z_read_whole_file(const char *pathname, Z_Result *result);
 
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
@@ -879,11 +876,15 @@ typedef enum {
     Z_Pipe_Mode_Write = 1,
 } Z_Pipe_Mode;
 
-const char *z_get_path_extention(const char *path);
-const char *z_get_home_path();
-void z_expand_path(const char *pathname, Z_Str *output);
-char *z_compress_path(const char *pathname);
-bool z_is_extention_equal(const char *path, const char *extention);
+Z_String_View z_get_path_extention(Z_String_View path);
+Z_String_View z_get_path_basename(Z_String_View path);
+
+Z_String_View z_get_home_path();
+
+Z_String z_expand_path(Z_String_View s);
+Z_String z_compress_path(Z_String_View s);
+
+bool z_is_extention_equal(Z_String_View pathname, Z_String_View extention);
 
 Z_Result z_dir_traverse(const char *dir, bool action(const char *));
 
@@ -1262,85 +1263,108 @@ int z_read_key()
 //       *       *       *       *       *       *        *        *
 //   *       *       *       *       *       *       *        *        *
 
-const char *z_get_path_extention(const char *pathname)
+Z_String_View z_get_path_extention(Z_String_View path)
 {
-    const char *last_dot = strrchr(pathname, '.');
+    int start = path.len - 1;
 
-    if (last_dot == NULL) {
-        return pathname;
+    while (start > 0 && path.ptr[start] != '.') {
+        if (path.ptr[start] == '/') {
+            return Z_EMPTY_SV();
+        }
+
+        start--;
     }
 
-    return last_dot + 1;
+    if (start == 0) {
+        if (path.ptr[0] == '.') {
+            return Z_SV(path.ptr + 1, path.len - 1);
+        } else {
+            return Z_EMPTY_SV();
+        }
+    }
+
+    Z_String_View extention = {
+        .ptr = path.ptr + start,
+        .len = path.len - start,
+    };
+
+    return extention;
 }
 
-const char *z_get_home_path()
+Z_String_View z_get_path_basename(Z_String_View pathname)
+{
+    (void)pathname;
+    return Z_EMPTY_SV();
+}
+
+Z_String_View z_get_home_path()
 {
     const char *home = getenv("HOME");
 
     if (home == NULL) {
-        return ".";
+        return Z_CSTR_TO_SV(".");
     }
 
-    return home;
+    return Z_CSTR_TO_SV(home);
 }
 
-void z_expand_path(const char *pathname, Z_Str *output)
+Z_String z_expand_path(Z_String_View p)
 {
-    if (pathname[0] == '~') {
-        z_str_push(output, "%s%s", z_get_home_path(), pathname + 1);
+    if (p.len == 0) {
+        return z_str_new("");
     }
 
-    z_str_push(output, "%s", pathname);
+    Z_String_View home = z_get_home_path();
+
+    if (p.ptr[0] == '~') {
+        return z_str_new("%.*s%.*s", home.len, home.ptr, p.len - 1, p.ptr + 1);
+    }
+
+    return z_str_new("%.*s", p.len, p.ptr);
 }
 
-char *z_compress_path(const char *pathname)
+Z_String z_compress_path(Z_String_View p)
 {
-    const char *home = z_get_home_path();
-    int home_len = strlen(home);
+    Z_String_View home = z_get_home_path();
 
-    if (strncmp(home, pathname, home_len) == 0) {
-        int len = strlen(pathname) - home_len + 1;
-        char *ret = malloc(sizeof(char) * len);
-        ret[0] = '~';
-        strcpy(ret + 1, pathname + home_len);
-
-        return ret;
+    if (z_str_n_cmp(p, home, home.len) == 0) {
+        return z_str_new("~%.*s", p.len - home.len, p.ptr + home.len);
     }
 
-    return strdup(pathname);
+    return z_str_new("%.*s", p.len, p.ptr);
 }
 
 Z_Result z_dir_traverse(const char *dir, bool action(const char *))
 {
-    struct dirent *de;
     DIR *dr = opendir(dir);
 
     if (dr == NULL) {
         return Z_Err;
     }
 
-    char fullPath[PATH_MAX];
+    struct dirent *de;
+
+    Z_String full_path = z_str_new("");
 
     while ((de = readdir(dr))) {
 
-        const char *file = de->d_name;
+        z_str_clear(&full_path);
+        z_str_pushf(&full_path, "%s/%s", dir, de->d_name);
 
-        int len = snprintf(fullPath, PATH_MAX, "%s/%s", dir, file);
-        fullPath[len] = '\0';
-
-        if (action(fullPath) == false) {
+        if (action(full_path.ptr) == false) {
             break;
         }
     }
 
+    z_str_free(&full_path);
     closedir(dr);
 
     return Z_Ok;
 }
 
-bool z_is_extention_equal(const char *pathname, const char *extention)
+bool z_is_extention_equal(Z_String_View pathname, Z_String_View extention)
 {
-    return strcmp(z_get_path_extention(pathname), extention) == 0;
+    return z_str_cmp(z_get_path_extention(pathname), extention) == 0;
 }
 
 bool z_is_dir(const char *pathname)
@@ -1504,50 +1528,33 @@ bool z_mkdir(const char *pathname)
 //       *       *       *       *       *       *        *        *
 //   *       *       *       *       *       *       *        *        *
 
-Z_Str z_str_new(const char *fmt, ...)
+Z_String z_str_new(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    Z_Str s = z_str_new_va(fmt, ap);
+    Z_String s = z_str_new_va(fmt, ap);
     va_end(ap);
 
     return s;
 }
 
-Z_Str z_str_new_va(const char *fmt, va_list ap)
+Z_String z_str_new_va(const char *fmt, va_list ap)
 {
-    Z_Str s = {0};
-    z_str_push_va(&s, fmt, ap);
+    Z_String s = {0};
+    z_str_pushf_va(&s, fmt, ap);
 
     return s;
 }
 
-void z_str_init(Z_Str *s, const char *fmt, ...)
+void z_str_pushf(Z_String *s, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    z_str_init_va(s, fmt, ap);
+    z_str_pushf_va(s, fmt, ap);
     va_end(ap);
 }
 
-void z_str_init_va(Z_Str *s, const char *fmt, va_list ap)
-{
-    s->ptr = NULL;
-    s->len = 0;
-    s->capacity = 0;
-
-    z_str_push_va(s, fmt, ap);
-}
-
-void z_str_push(Z_Str *s, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    z_str_push_va(s, fmt, ap);
-    va_end(ap);
-}
-
-void z_str_push_va(Z_Str *s, const char *fmt, va_list ap)
+void z_str_pushf_va(Z_String *s, const char *fmt, va_list ap)
 {
     int len = z_get_fmt_size_va(fmt, ap);
     z_ensure_capacity(s, s->len + len + 1);
@@ -1560,39 +1567,29 @@ void z_str_push_va(Z_Str *s, const char *fmt, va_list ap)
     s->len = s->len + len;
 }
 
-void z_str_push_c(Z_Str *s, char c)
+void z_str_push(Z_String *dst, Z_String_View src)
+{
+    z_str_pushf(dst, "%.*s", src.len, src.ptr);
+}
+
+void z_str_push_c(Z_String *s, char c)
 {
     z_ensure_capacity(s, s->len + 1);
     s->ptr[s->len++] = c;
     z_null_terminate(s);
 }
 
-char z_str_top_c(Z_Str *s)
-{
-    return s->ptr[s->len - 1];
-}
-
-char z_str_pop_c(Z_Str *s)
+char z_str_pop_c(Z_String *s)
 {
     return s->ptr[--s->len];
 }
 
-void z_str_push_str(Z_Str *dst, const Z_Str_Slice src)
+char z_str_top_c(Z_String_View s)
 {
-    z_str_push(dst, "%.*s", src.len, src.ptr);
+    return s.ptr[s.len - 1];
 }
 
-int z_str_len(Z_Str_Slice s)
-{
-    return s.len;
-}
-
-bool z_str_is_empty(Z_Str_Slice s)
-{
-    return s.len == 0;
-}
-
-int z_str_cmp(Z_Str_Slice s1, Z_Str_Slice s2)
+int z_str_cmp(Z_String_View s1, Z_String_View s2)
 {
     if (s1.len > s2.len) {
         return 1;
@@ -1603,115 +1600,66 @@ int z_str_cmp(Z_Str_Slice s1, Z_Str_Slice s2)
     }
 }
 
-int z_str_n_cmp(Z_Str_Slice s1, Z_Str_Slice s2, int n)
+int z_str_n_cmp(Z_String_View s1, Z_String_View s2, int n)
 {
     assert(s1.len >= n && s2.len >= n);
+
     return memcmp(s1.ptr, s2.ptr, n);
 }
 
-Z_Str_Slice z_str_tok_init(Z_Str_Slice s)
-{
-    Z_Str_Slice slice = {
-        .len = 0,
-        .ptr = s.ptr,
-    };
+void z_str_replace(Z_String *s, Z_String_View target, Z_String_View replacement);
 
-    return slice;
-}
+void z_str_trim(Z_String *s);
+void z_str_trim_cset(Z_String *s, Z_String_View cset);
 
-Z_Result z_str_tok_next(Z_Str_Slice s, Z_Str_Slice *slice, const char *delim)
-{
-    char *start = slice->ptr + slice->len;
-    char *str_end = s.ptr + s.len;
+Z_String_View z_str_view_trim(Z_String_View s);
+Z_String_View z_str_view_trim_cset(Z_String_View s, Z_String_View cset);
 
-    while (start < str_end && strchr(delim, *start) != NULL) {
-        start++;
-    }
-
-    char *end = start;
-
-    while (end < str_end && strchr(delim, *end) == NULL) {
-        end++;
-    }
-
-    if (start == str_end) {
-        return Z_Err;
-    }
-
-    slice->ptr = start;
-    slice->len = end - start;
-
-    return Z_Ok;
-}
-
-void z_str_replace(Z_Str *s, const char *target, const char *replacement); // TODO: implement
-void z_str_trim(Z_Str *s); // TODO: implement
-void z_str_trim_cset(Z_Str *s, const char *cset); // TODO: implement
-
-void z_str_print(Z_Str_Slice s)
+void z_str_print(Z_String_View s)
 {
     printf("%.*s", s.len, s.ptr);
 }
 
-void z_str_println(Z_Str_Slice s)
+void z_str_println(Z_String_View s)
 {
     printf("%.*s\n", s.len, s.ptr);
 }
 
-void z_str_free(Z_Str s)
-{
-    free(s.ptr);
-}
-
-void z_str_free_ptr(Z_Str *s)
+void z_str_free(Z_String *s)
 {
     free(s->ptr);
+    s->ptr = NULL;
+    s->len = 0;
+    s->capacity = 0;
 }
 
-void z_str_clear(Z_Str *s)
+void z_str_clear(Z_String *s)
 {
     s->len = 0;
     z_null_terminate(s);
 }
 
-Z_Str z_str_get_line(FILE *fp)
-{
-    Z_Str s;
-    s.ptr = NULL;
-    size_t capacity = 0;
-
-    s.len = getline(&s.ptr, &capacity, fp);
-    s.capacity = capacity;
-
-    if (s.len == -1) {
-        return z_str_new("");
-    }
-
-	if (s.len > 0 && z_str_top_c(&s) == '\n') {
-        z_str_pop_c(&s);
-    }
-
-    return s;
-}
-
-Z_Result z_read_whole_file(Z_Str *s, const char *pathname)
+Z_String z_read_whole_file(const char *pathname, Z_Result *result)
 {
     FILE *fp = fopen(pathname, "r");
 
     if (fp == NULL) {
-        return Z_Err;
+        *result = Z_Err;
+        return (Z_String){0};
     }
 
     int file_size = z_get_file_size(fp);
 
-    s->capacity = file_size + 1;
-    s->ptr = malloc(sizeof(char) * s->capacity);
-    s->len = fread(s->ptr, sizeof(char), file_size, fp);
-    s->ptr[s->len] = '\0';
+    Z_String s;
+    s.capacity = file_size + 1;
+    s.ptr = malloc(sizeof(char) * s.capacity);
+    s.len = fread(s.ptr, sizeof(char), file_size, fp);
+    s.ptr[s.len] = '\0';
 
     fclose(fp);
+    *result = Z_Ok;
 
-    return Z_Ok;
+    return s;
 }
 
 //   *       *       *       *       *       *       *        *        *
