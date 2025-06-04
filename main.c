@@ -6,19 +6,25 @@
 #define LIBZATAR_IMPLEMENTATION
 #include "zatar.h"
 
-Z_MAP_DECLARE(Map, char *, char *, map)
-Z_MAP_IMPLEMENT(Map, char *, char *, map)
-
 int main(void)
 {
-    Map m;
-    map_init(&m, (int (*)(char *, char *))strcmp);
+    Z_Result result;
+    Z_String f = z_read_whole_file("main.c", &result);
 
-    map_put(&m, strdup("Hello"), strdup("bye"), (void (*)(char *))free, (void (*)(char *))free);
-
-    char *x;
-    if (map_find(&m, "Hello", &x)) {
-        printf("%s\n", x);
+    if (result == Z_Err) {
+        return 1;
     }
 
+    Z_String_Tokonizer tok;
+    z_str_tok_init(&tok, Z_STR_TO_SV(f), Z_CSTR_TO_SV("\n "));
+
+    Z_String_View line = z_str_tok_next(&tok);
+
+    while (line.len > 0) {
+        printf("-- ");
+        z_str_println(line);
+        line = z_str_tok_next(&tok);
+    }
+
+    z_str_free(&f);
 }

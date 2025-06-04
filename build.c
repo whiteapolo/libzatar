@@ -5,7 +5,7 @@ int main(int argc, char **argv)
 {
     z_rebuild_yourself(__FILE__, argv);
 
-    z_run_async("cc", "main.c", "-o", "exe", "-Wextra", "-Wall");
+    z_run_async("cc", "main.c", "-o", "exe", "-Wextra", "-Wall", "-g");
 
     return 0;
 }
