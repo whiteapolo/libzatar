@@ -3,9 +3,17 @@
 
 int main(int argc, char **argv)
 {
-    z_rebuild_yourself(__FILE__, argv);
+    rebuild_yourself(__FILE__, argv);
 
-    z_run_async("cc", "main.c", "-o", "exe", "-Wextra", "-Wall", "-g");
+    Cmd cmd;
+    cmd_append(&cmd, "cc");
+    cmd_append(&cmd, "main.c");
+    cmd_append(&cmd, "-o", "exe");
+    cmd_append(&cmd, "-Wextra", "-Wall");
+    cmd_append(&cmd, "-g");
+    cmd_append(&cmd, "-O3");
+
+    cmd_run_async(&cmd);
 
     return 0;
 }
