@@ -1,11 +1,11 @@
 #define LIBZATAR_IMPLEMENTATION
-#include "zatar.h"
+#include "libzatar.h"
 
 int main(int argc, char **argv)
 {
     rebuild_yourself(__FILE__, argv);
 
-    Cmd cmd;
+    Cmd cmd = {0};
     cmd_append(&cmd, "cc");
     cmd_append(&cmd, "main.c");
     cmd_append(&cmd, "-o", "exe");

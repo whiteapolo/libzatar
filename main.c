@@ -4,14 +4,12 @@
 #include <time.h>
 
 #define LIBZATAR_IMPLEMENTATION
-#include "zatar.h"
+#include "libzatar.h"
 
 int main(void)
 {
-    Z_Result result;
-    Z_String f = z_read_whole_file("main.c", &result);
-
-    if (result == Z_Err) {
+    Z_String f = z_str_new("");
+    if (!z_read_whole_file("main.c", &f)) {
         return 1;
     }
 

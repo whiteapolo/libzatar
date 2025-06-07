@@ -44,12 +44,6 @@
 
 #define CALL_F_IF_NOT_NULL(f, ...) if (f) f(__VA_ARGS__)
 
-#ifndef PATH_MAX
-#define PATH_MAX 4096
-#endif
-
-typedef enum { Z_Ok, Z_Err } Z_Result;
-
 int z_in_range(int min, int val, int max);
 int z_get_file_size(FILE *fp);
 int z_get_fmt_size(const char *fmt, ...);
@@ -65,20 +59,29 @@ int z_print_error(const char *fmt, ...);
 int z_print_info(const char *fmt, ...);
 int z_print_warning(const char *fmt, ...);
 
-#define z_ensure_capacity(da, cap)                                                     \
+#define z_da_ensure_capacity(da, cap)                                                  \
     do {                                                                               \
-        if ((da)->capacity < (cap)) {                                                      \
+        if ((da)->capacity < (cap)) {                                                  \
             int new_capacity = z_max((cap), (da)->capacity * Z_DEFAULT_GROWTH_RATE);   \
             (da)->capacity = new_capacity;                                             \
             (da)->ptr = realloc((da)->ptr, sizeof((da)->ptr[0]) * (da)->capacity);     \
         }                                                                              \
     } while (0)
 
-#define z_null_terminate(da)                                   \
+#define z_da_append(da, item)                      \
+    do {                                           \
+        z_da_ensure_capacity((da), (da)->len + 1); \
+        (da)->ptr[(da)->len++] = (item);           \
+    } while (0)
+
+#define z_da_peek(da) ((da)->ptr[(da)->len - 1])
+#define z_da_pop(da) ((da)->ptr[--(da)->len])
+
+#define z_da_null_terminate(da)                                \
     do {                                                       \
-        z_ensure_capacity((da), (da)->len + 1);                \
+        z_da_ensure_capacity((da), (da)->len + 1);             \
         memset(&(da)->ptr[(da)->len], 0, sizeof(*(da)->ptr));  \
-    } while(0)
+    } while (0)
 
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
@@ -106,7 +109,7 @@ int z_print_warning(const char *fmt, ...);
 #define Z_COLOR_BLUE            "\033[0;34m"
 #define Z_COLOR_MAGENTA         "\033[0;35m"
 #define Z_COLOR_CYAN            "\033[0;36m"
-#define Z_COLOR_WHITE            "\033[0;37m"
+#define Z_COLOR_WHITE           "\033[0;37m"
 #define Z_COLOR_GRAY            "\033[0;90m"
 
 #define Z_COLOR_BOLD_RED        "\033[1;91m"
@@ -158,147 +161,22 @@ typedef enum {
 #define z_clear_screen()                  printf("\033[2J")
 #define z_update_screen()                 fflush(stdout)
 
-Z_Result z_enable_raw_mode(int vminKeys, int vtime);
-Z_Result z_disable_raw_mode();
+bool z_enable_raw_mode(int vminKeys, int vtime);
+bool z_disable_raw_mode();
 
-Z_Result z_get_cursor_pos(int *x, int *y);
+bool z_get_cursor_pos(int *x, int *y);
 
-Z_Result z_get_screen_size_by_cursor(int *width, int *height);
-Z_Result z_get_screen_size_by_ioctl(int *width, int *height);
-Z_Result z_get_screen_size(int *width, int *height);
+bool z_get_screen_size_by_cursor(int *width, int *height);
+bool z_get_screen_size_by_ioctl(int *width, int *height);
+bool z_get_screen_size(int *width, int *height);
 
-Z_Result z_register_change_in_window_size(void function(int));
+bool z_register_change_in_window_size(void function(int));
 
-Z_Result z_enable_full_buffering(FILE *fp);
+bool z_enable_full_buffering(FILE *fp);
 
 int z_wait_for_byte();
 int z_read_escape_key();
 int z_read_key();
-
-//   *       *       *       *       *       *       *        *        *
-//       *       *       *       *       *       *        *        *
-//   *       *       *       *       *       *       *        *        *
-//       *       *       *       *       *       *        *        *
-//   *       *       *       *       *       *       *        *        *
-//
-//
-//   vector header
-//
-//
-//   *       *       *       *       *       *       *        *        *
-//       *       *       *       *       *       *        *        *
-//   *       *       *       *       *       *       *        *        *
-//       *       *       *       *       *       *        *        *
-//   *       *       *       *       *       *       *        *        *
-
-#define Z_VECTOR_DECLARE(name, T, prefix)                               \
-                                                                       \
-typedef struct {                                                       \
-    T *ptr;                                                            \
-    int len;                                                           \
-    int capacity;                                                      \
-} name;                                                                \
-                                                                       \
-void prefix##_init(name *v);                                           \
-T prefix##_at(name *v, int i);                                         \
-void prefix##_add(name *v, T data);                                    \
-T prefix##_remove_last(name *v);                                       \
-int prefix##_len(const name *v);                                       \
-bool prefix##_is_empty(const name *v);                                 \
-int prefix##_find(const name *v, T data, void cmp(T, T));              \
-void prefix##_for_each(name *v, void function(T));                     \
-void prefix##_free(name *v, void free_function(T));                    \
-void prefix##_print(const name *v, void print_data(T));
-
-
-#define Z_VECTOR_IMPLEMENT(name, T, prefix)                            \
-                                                                       \
-void prefix##_init(name *v)                                            \
-{                                                                      \
-    v->ptr = NULL;                                                     \
-    v->len = 0;                                                        \
-    v->capacity = 0;                                                   \
-}                                                                      \
-                                                                       \
-T prefix##_at(name *v, int i)                                          \
-{                                                                      \
-    return v->ptr[i];                                                  \
-}                                                                      \
-                                                                       \
-void prefix##_add(name *v, T data)                                     \
-{                                                                      \
-    z_ensure_capacity(v, v->len + 1);                                  \
-    v->ptr[v->len++] = data;                                           \
-}                                                                      \
-                                                                       \
-T prefix##_remove_last(name *v)                                        \
-{                                                                      \
-    return v->ptr[--v->len];                                           \
-}                                                                      \
-                                                                       \
-int prefix##_len(const name *v)                                        \
-{                                                                      \
-    return v->len;                                                     \
-}                                                                      \
-                                                                       \
-bool prefix##_is_empty(const name *v)                                  \
-{                                                                      \
-    return v->len == 0;                                                \
-}                                                                      \
-                                                                       \
-int prefix##_find(const name *v, T data, void cmp(T, T))               \
-{                                                                      \
-    if (cmp) {                                                         \
-        for (int i = 0; i < v->len; i++) {                             \
-            if (cmp(data, v->ptr[i]) == 0) {                           \
-                return i;                                              \
-            }                                                          \
-        }                                                              \
-    } else {                                                           \
-        for (int i = 0; i < v->len; i++) {                             \
-            if (data == v->ptr[i]) {                                   \
-                return i;                                              \
-            }                                                          \
-        }                                                              \
-    }                                                                  \
-                                                                       \
-    return -1;                                                         \
-}                                                                      \
-                                                                       \
-void prefix##_for_each(name *v, void function(T))                      \
-{                                                                      \
-    for (int i = 0; i < v->len; i++) {                                 \
-        function(v->ptr[i]);                                           \
-    }                                                                  \
-}                                                                      \
-                                                                       \
-void prefix##_free(name *v, void free_function(T))                     \
-{                                                                      \
-    if (free_function) {                                               \
-        prefix##_for_each(v, free_function);                           \
-    } else {                                                           \
-        free(v->ptr);                                                  \
-    }                                                                  \
-}                                                                      \
-                                                                       \
-void prefix##_print(const name *v, void print_data(T))                 \
-{                                                                      \
-    if (v->len == 0) {                                                 \
-        printf("[]\n");                                                \
-        return;                                                        \
-    }                                                                  \
-                                                                       \
-    printf("[ ");                                                      \
-                                                                       \
-    for (int i = 0; i < v->len - 1; i++) {                             \
-        print_data(v->ptr[i]);                                         \
-        printf(", ");                                                  \
-    }                                                                  \
-                                                                       \
-    print_data(v->ptr[v->len - 1]);                                    \
-                                                                       \
-    printf(" ]\n");                                                    \
-}
 
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
@@ -329,22 +207,22 @@ typedef struct type_name {                                             \
 void prefix##_put(type_name **root,                                    \
                      K key,                                            \
                      V value,                                          \
-                     int cmp_keys(K, K),                               \
+                     int cmp_keys(const K, const K),                               \
                      void free_key(K),                                 \
                      void free_value(V));                              \
                                                                        \
 bool prefix##_is_exists(type_name *root,                               \
                         K key,                                         \
-                        int cmp_keys(K, K));                           \
+                        int cmp_keys(const K, const K));                           \
                                                                        \
 bool prefix##_find(type_name *root,                                    \
-                K key,                                                 \
-                int cmp_keys(K, K),                                    \
+                const K key,                                           \
+                int cmp_keys(const K, const K),                                    \
                 V *value);                                             \
                                                                        \
 void prefix##_remove(type_name **root,                                 \
                      K key,                                            \
-                     int cmp_keys(K, K),                               \
+                     int cmp_keys(const K, const K),                               \
                      void free_key(K),                                 \
                      void free_value(V));                              \
                                                                        \
@@ -453,7 +331,7 @@ type_name *prefix##_get_min(type_name *root)                                  \
     return curr;                                                              \
 }                                                                             \
                                                                               \
-type_name *prefix##_find_node(type_name *root, K key, int cmp_keys(K, K))     \
+type_name *prefix##_find_node(type_name *root, const K key, int cmp_keys(const K, const K))     \
 {                                                                             \
     type_name *curr = root;                                                   \
                                                                               \
@@ -474,14 +352,14 @@ type_name *prefix##_find_node(type_name *root, K key, int cmp_keys(K, K))     \
                                                                               \
 bool prefix##_is_exists(type_name *root,                                      \
                         K key,                                                \
-                        int cmp_keys(K, K))                                   \
+                        int cmp_keys(const K, const K))                                   \
 {                                                                             \
     return prefix##_find_node(root, key, cmp_keys) != NULL;                        \
 }                                                                             \
                                                                               \
 bool prefix##_find(type_name *root,                                           \
-                K key,                                                        \
-                int cmp_keys(K, K),                                           \
+                const K key,                                                  \
+                int cmp_keys(const K, const K),                                           \
                 V *value)                                                     \
 {                                                                             \
     type_name *node = prefix##_find_node(root, key, cmp_keys);                     \
@@ -497,7 +375,7 @@ bool prefix##_find(type_name *root,                                           \
 void prefix##_put(type_name **root,                                           \
                      K key,                                                   \
                      V value,                                                 \
-                     int cmp_keys(K, K),                                      \
+                     int cmp_keys(const K, const K),                                      \
                      void free_key(K),                                        \
                      void free_value(V))                                      \
 {                                                                             \
@@ -537,7 +415,7 @@ void prefix##_put(type_name **root,                                           \
                                                                               \
 void prefix##_remove(type_name **root,                                        \
                      K key,                                                   \
-                     int cmp_keys(K, K),                                      \
+                     int cmp_keys(const K, const K),                                      \
                      void free_key(K),                                        \
                      void free_value(V))                                      \
 {                                                                             \
@@ -670,10 +548,10 @@ Z_AVL_DECLARE(_avl_##type_name, K, V, _avl_##prefix)                   \
                                                                        \
 typedef struct {                                                       \
     _avl_##type_name *root;                                            \
-    int (*cmp_keys)(K, K);                                             \
+    int (*cmp_keys)(const K, const K);                                           \
 } type_name;                                                           \
                                                                        \
-void prefix##_init(type_name *m, int cmp_keys(K, K));                  \
+void prefix##_init(type_name *m, int cmp_keys(const K, const K));                  \
                                                                        \
 void prefix##_put(type_name *m,                                        \
                   K key,                                               \
@@ -681,7 +559,7 @@ void prefix##_put(type_name *m,                                        \
                   void free_key(K),                                    \
                   void free_value(V));                                 \
                                                                        \
-bool prefix##_find(const type_name *m, K key, V *value);               \
+bool prefix##_find(const type_name *m, const K key, V *value);         \
                                                                        \
 bool prefix##_is_exists(const type_name *m, K key);                    \
                                                                        \
@@ -701,7 +579,7 @@ void prefix##_free(type_name *m,                                       \
                                                                        \
 Z_AVL_IMPLEMENT(_avl_##type_name, K, V, _avl_##prefix)                 \
                                                                        \
-void prefix##_init(type_name *m, int cmp_keys(K, K))                   \
+void prefix##_init(type_name *m, int cmp_keys(const K, const K))                   \
 {                                                                      \
     m->cmp_keys = cmp_keys;                                            \
     m->root = NULL;                                                    \
@@ -716,7 +594,7 @@ void prefix##_put(type_name *m,                                        \
     _avl_##prefix##_put(&m->root, key, value, m->cmp_keys, free_key, free_value);\
 }                                                                      \
                                                                        \
-bool prefix##_find(const type_name *m, K key, V *value)                \
+bool prefix##_find(const type_name *m, const K key, V *value)          \
 {                                                                      \
     return _avl_##prefix##_find(m->root, key, m->cmp_keys, value);     \
 }                                                                      \
@@ -778,7 +656,7 @@ typedef struct {                  \
 
 #define Z_MAT_AT(mat, _y, _x) ((mat)->ptr[(_y) * (mat)->x + (_x)])
 
-#define Z_MAT_INIT(mat, _x, _y)                                     \
+#define Z_MAT_INIT(mat, _y, _x)                                     \
     do {                                                            \
         (mat)->ptr = malloc(sizeof((mat)->ptr[0]) * (_x) * (_y));   \
         (mat)->x = (_x);                                            \
@@ -786,7 +664,7 @@ typedef struct {                  \
         (mat)->capacity = (_x) * (_y);                              \
     } while (0)
 
-#define Z_MAT_RESIZE(mat, _x, _y)                                                   \
+#define Z_MAT_RESIZE(mat, _y, _x)                                                   \
     do {                                                                            \
         if ((mat)->capacity < (_x) * (_y)) {                                        \
             (mat)->capacity = (_x) * (_y);                                          \
@@ -832,11 +710,12 @@ typedef struct {
     Z_String_View delim;
 } Z_String_Tokonizer;
 
-#define Z_SV(p, l)          ((Z_String_View){ .ptr = (p), .len = (l) })
-#define Z_STR_TO_SV(s)      ((Z_String_View){ .ptr = (s).ptr, .len = (s).len })
-#define Z_CSTR_TO_SV(s)     ((Z_String_View){ .ptr = (s), .len = strlen(s) })
-#define Z_EMPTY_SV()        ((Z_String_View){ .ptr = NULL, .len = 0 })
+#define Z_SV(p, l)          ((Z_String_View){ .ptr = (p), .len = (l)            })
+#define Z_STR_TO_SV(s)      ((Z_String_View){ .ptr = (s).ptr, .len = (s).len    })
+#define Z_CSTR_TO_SV(s)     ((Z_String_View){ .ptr = (s), .len = strlen(s)      })
+#define Z_EMPTY_SV()        ((Z_String_View){ .ptr = NULL, .len = 0             })
 
+const char *z_str_to_cstr(Z_String *s);
 Z_String z_str_new(const char *fmt, ...);
 Z_String z_str_new_va(const char *fmt, va_list ap);
 void z_str_pushf(Z_String *s, const char *fmt, ...);
@@ -863,7 +742,7 @@ void z_str_println(Z_String_View s);
 void z_str_free(Z_String *s);
 void z_str_clear(Z_String *s);
 
-Z_String z_read_whole_file(const char *pathname, Z_Result *result);
+bool z_read_whole_file(const char *pathname, Z_String *out);
 
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
@@ -896,18 +775,18 @@ Z_String z_compress_path(Z_String_View s);
 
 bool z_is_extention_equal(Z_String_View pathname, Z_String_View extention);
 
-Z_Result z_dir_traverse(const char *dir, bool action(const char *));
+bool z_dir_traverse(const char *dir, bool action(const char *));
 
 bool z_is_dir(const char *pathname);
 bool z_is_regular_file(const char *pathname);
 bool z_is_path_exists(const char *pathname);
 
-Z_Result z_write_file(const char *pathname, const char *fmt, ...);
-Z_Result z_append_file(const char *pathname, const char *fmt, ...);
-Z_Result z_read_file(const char *pathname, const char *fmt, ...);
+bool z_write_file(const char *pathname, const char *fmt, ...);
+bool z_append_file(const char *pathname, const char *fmt, ...);
+bool z_read_file(const char *pathname, const char *fmt, ...);
 
-Z_Result z_redirect_fd(int src_fd, const char *dst_pathname);
-Z_Result z_popen2(char *path, char *argv[], FILE *ppipe[2]);
+bool z_redirect_fd(int src_fd, const char *dst_pathname);
+bool z_popen2(char *path, char *argv[], FILE *ppipe[2]);
 
 bool z_mkdir(const char *pathname);
 
@@ -1117,10 +996,10 @@ int z_max3(int a, int b, int c)
 
 static struct termios original_termios;
 
-Z_Result z_enable_raw_mode(int vminKeys, int vtime)
+bool z_enable_raw_mode(int vminKeys, int vtime)
 {
     if (tcgetattr(STDIN_FILENO, &original_termios) == -1) {
-        return Z_Err;
+        return false;
     }
 
     struct termios raw = original_termios;
@@ -1132,63 +1011,63 @@ Z_Result z_enable_raw_mode(int vminKeys, int vtime)
     raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
 
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) {
-        return Z_Err;
+        return false;
     }
 
-    return Z_Ok;
+    return true;
 }
 
-Z_Result z_disable_raw_mode()
+bool z_disable_raw_mode()
 {
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_termios) == -1) {
-        return Z_Err;
+        return false;
     }
 
-    return Z_Ok;
+    return true;
 }
 
-Z_Result z_get_cursor_pos(int *x, int *y)
+bool z_get_cursor_pos(int *x, int *y)
 {
     printf("\033[6n");
 
     if (scanf("\033[%d;%dR", y, x) == 2) {
-        return Z_Ok;
+        return true;
     }
 
-    return Z_Err;
+    return false;
 }
 
-Z_Result z_get_screen_size_by_cursor(int *width, int *height)
+bool z_get_screen_size_by_cursor(int *width, int *height)
 {
     z_set_cursor_pos(999, 999);
 
     return z_get_cursor_pos(width, height);
 }
 
-Z_Result z_get_screen_size_by_ioctl(int *width, int *height)
+bool z_get_screen_size_by_ioctl(int *width, int *height)
 {
     struct winsize ws;
 
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != 0) {
-        return Z_Err;
+        return false;
     }
 
     *width = ws.ws_col;
     *height = ws.ws_row;
 
-    return Z_Ok;
+    return true;
 }
 
-Z_Result z_get_screen_size(int *width, int *height)
+bool z_get_screen_size(int *width, int *height)
 {
-    if (z_get_screen_size_by_ioctl(width, height) == Z_Ok) {
-        return Z_Ok;
+    if (z_get_screen_size_by_ioctl(width, height) == true) {
+        return true;
     }
 
     return z_get_screen_size_by_cursor(width, height);
 }
 
-Z_Result z_register_change_in_window_size(void funciton(int))
+bool z_register_change_in_window_size(void funciton(int))
 {
     struct sigaction sa;
     sa.sa_handler = funciton;
@@ -1196,20 +1075,20 @@ Z_Result z_register_change_in_window_size(void funciton(int))
     sigemptyset(&sa.sa_mask);
 
     if (sigaction(SIGWINCH, &sa, NULL) == -1) {
-        return Z_Err;
+        return false;
     }
 
-    return Z_Ok;
+    return true;
 }
 
-Z_Result z_enable_full_buffering(FILE *fp)
+bool z_enable_full_buffering(FILE *fp)
 {
     // do not flush on '\n'
     if (setvbuf(fp, NULL, _IOFBF, BUFSIZ) != 0) {
-        return Z_Err;
+        return false;
     }
 
-    return Z_Ok;
+    return true;
 }
 
 int z_wait_for_byte()
@@ -1321,7 +1200,7 @@ Z_String_View z_get_home_path()
 Z_String z_expand_path(Z_String_View p)
 {
     if (p.len == 0) {
-        return z_str_new("");
+        return (Z_String){0};
     }
 
     Z_String_View home = z_get_home_path();
@@ -1344,17 +1223,17 @@ Z_String z_compress_path(Z_String_View p)
     return z_str_new("%.*s", p.len, p.ptr);
 }
 
-Z_Result z_dir_traverse(const char *dir, bool action(const char *))
+bool z_dir_traverse(const char *dir, bool action(const char *))
 {
     DIR *dr = opendir(dir);
 
     if (dr == NULL) {
-        return Z_Err;
+        return false;
     }
 
     struct dirent *de;
 
-    Z_String full_path = z_str_new("");
+    Z_String full_path = {0};
 
     while ((de = readdir(dr))) {
 
@@ -1369,7 +1248,7 @@ Z_Result z_dir_traverse(const char *dir, bool action(const char *))
     z_str_free(&full_path);
     closedir(dr);
 
-    return Z_Ok;
+    return true;
 }
 
 bool z_is_extention_equal(Z_String_View pathname, Z_String_View extention)
@@ -1398,7 +1277,7 @@ bool z_is_path_exists(const char *pathname)
     return !access(pathname, F_OK);
 }
 
-Z_Result z_write_file(const char *fileName, const char *fmt, ...)
+bool z_write_file(const char *fileName, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -1406,16 +1285,16 @@ Z_Result z_write_file(const char *fileName, const char *fmt, ...)
     FILE *fp = fopen(fileName, "w");
 
     if (fp == NULL) {
-        return Z_Err;
+        return false;
     }
 
     vfprintf(fp, fmt, ap);
     va_end(ap);
 
-    return Z_Ok;
+    return true;
 }
 
-Z_Result z_append_file(const char *fileName, const char *fmt, ...)
+bool z_append_file(const char *fileName, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -1423,16 +1302,16 @@ Z_Result z_append_file(const char *fileName, const char *fmt, ...)
     FILE *fp = fopen(fileName, "a");
 
     if (fp == NULL) {
-        return Z_Err;
+        return false;
     }
 
     vfprintf(fp, fmt, ap);
     va_end(ap);
 
-    return Z_Ok;
+    return true;
 }
 
-Z_Result z_read_file(const char *fileName, const char *fmt, ...)
+bool z_read_file(const char *fileName, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -1440,51 +1319,51 @@ Z_Result z_read_file(const char *fileName, const char *fmt, ...)
     FILE *fp = fopen(fileName, "r");
 
     if (fp == NULL) {
-        return Z_Err;
+        return false;
     }
 
     if (vfscanf(fp, fmt, ap) == EOF) {
         fclose(fp);
-        return Z_Err;
+        return false;
     }
 
     va_end(ap);
     fclose(fp);
 
-    return Z_Ok;
+    return true;
 }
 
-Z_Result z_redirect_fd(int srcFd, const char *destFileName)
+bool z_redirect_fd(int srcFd, const char *destFileName)
 {
     int destFd = open(destFileName, O_WRONLY);
 
     if (destFd == -1) {
-        return Z_Err;
+        return false;
     }
 
     if (dup2(destFd, srcFd) == -1) {
         close(destFd);
-        return Z_Err;
+        return false;
     }
 
     close(destFd);
 
-    return Z_Ok;
+    return true;
 }
 
-Z_Result z_popen2(char *pathname, char *argv[], FILE *ppipe[2])
+bool z_popen2(char *pathname, char *argv[], FILE *ppipe[2])
 {
     int output[2];
     int input[2];
 
     if (pipe(output) == -1 || pipe(input) == -1) {
-        return Z_Err;
+        return false;
     }
 
     int pid = fork();
 
     if (pid == -1) {
-        return Z_Err;
+        return false;
     }
 
     if (pid) {
@@ -1504,7 +1383,7 @@ Z_Result z_popen2(char *pathname, char *argv[], FILE *ppipe[2])
         exit(EXIT_FAILURE);
     }
 
-    return Z_Ok;
+    return true;
 }
 
 bool z_mkdir(const char *pathname)
@@ -1538,6 +1417,12 @@ bool z_mkdir(const char *pathname)
 //       *       *       *       *       *       *        *        *
 //   *       *       *       *       *       *       *        *        *
 
+const char *z_str_to_cstr(Z_String *s)
+{
+    z_da_null_terminate(s);
+    return s->ptr;
+}
+
 Z_String z_str_new(const char *fmt, ...)
 {
     va_list ap;
@@ -1567,7 +1452,7 @@ void z_str_pushf(Z_String *s, const char *fmt, ...)
 void z_str_pushf_va(Z_String *s, const char *fmt, va_list ap)
 {
     int len = z_get_fmt_size_va(fmt, ap);
-    z_ensure_capacity(s, s->len + len + 1);
+    z_da_ensure_capacity(s, s->len + len + 1);
 
     va_list ap1;
     va_copy(ap1, ap);
@@ -1584,9 +1469,9 @@ void z_str_push(Z_String *dst, Z_String_View src)
 
 void z_str_push_c(Z_String *s, char c)
 {
-    z_ensure_capacity(s, s->len + 1);
+    z_da_ensure_capacity(s, s->len + 1);
     s->ptr[s->len++] = c;
-    z_null_terminate(s);
+    z_da_null_terminate(s);
 }
 
 char z_str_pop_c(Z_String *s)
@@ -1688,30 +1573,25 @@ void z_str_free(Z_String *s)
 void z_str_clear(Z_String *s)
 {
     s->len = 0;
-    z_null_terminate(s);
+    z_da_null_terminate(s);
 }
 
-Z_String z_read_whole_file(const char *pathname, Z_Result *result)
+bool z_read_whole_file(const char *pathname, Z_String *out)
 {
     FILE *fp = fopen(pathname, "r");
 
     if (fp == NULL) {
-        *result = Z_Err;
-        return (Z_String){0};
+        return false;
     }
 
     int file_size = z_get_file_size(fp);
 
-    Z_String s;
-    s.capacity = file_size + 1;
-    s.ptr = malloc(sizeof(char) * s.capacity);
-    s.len = fread(s.ptr, sizeof(char), file_size, fp);
-    s.ptr[s.len] = '\0';
+    z_da_ensure_capacity(out, out->len + file_size);
+    out->len += fread(&out->ptr[out->len], sizeof(char), file_size, fp);
+    z_da_null_terminate(out);
 
     fclose(fp);
-    *result = Z_Ok;
-
-    return s;
+    return true;
 }
 
 //   *       *       *       *       *       *       *        *        *
@@ -1776,8 +1656,10 @@ void z_rebuild_yourself(const char *src_pathname, char **argv)
         return;
     }
 
-    int status;
-    status = z_run_async("cc", src_pathname, "-o", argv[0]);
+    Z_Cmd cmd = {0};
+    z_cmd_append(&cmd, "cc", src_pathname, "-o", argv[0]);
+    int status = z_cmd_run_async(&cmd);
+    z_cmd_free(&cmd);
 
     if (status != 0) {
         exit(status);
@@ -1810,7 +1692,7 @@ void z_cmd_append_va(Z_Cmd *cmd, va_list ap)
 	const char *arg = va_arg(ap1, const char *);
 
 	while (arg) {
-        z_ensure_capacity(cmd, cmd->len + 1);
+        z_da_ensure_capacity(cmd, cmd->len + 1);
 		cmd->ptr[cmd->len++] = strdup(arg);
 		arg = va_arg(ap1, const char *);
 	}
@@ -1841,7 +1723,7 @@ void z_cmd_print(const Z_Cmd *cmd)
 
 int z_cmd_run_async(Z_Cmd *cmd)
 {
-    z_null_terminate(cmd);
+    z_da_null_terminate(cmd);
 	z_cmd_print(cmd);
 
 	pid_t pid = fork();
@@ -1859,24 +1741,6 @@ int z_cmd_run_async(Z_Cmd *cmd)
 		z_print_error(Z_COLOR_RED "exited abnormally " Z_COLOR_RESET
                 "with code " Z_COLOR_RED "%d" Z_COLOR_RESET, status);
 	}
-
-	return status;
-}
-
-int _z_run_async(const char *arg, ...)
-{
-	va_list ap;
-	va_start(ap, arg);
-
-	Z_Cmd cmd;
-	z_cmd_init(&cmd);
-	z_cmd_append(&cmd, arg);
-	z_cmd_append_va(&cmd, ap);
-
-	int status = z_cmd_run_async(&cmd);
-
-    z_cmd_free(&cmd);
-	va_end(ap);
 
 	return status;
 }
@@ -1913,14 +1777,12 @@ void z_cmd_clear(Z_Cmd *cmd)
 #endif // end implementation
 #endif // end header
 
-#ifndef LIBZATAR_KEEP_PREFIX_GAURD
+#ifndef LIBZATAR_STRIP_PREFIX_GAURD
 #define LIBZATAR_KEEP_PREFIX_GAURD
-#ifndef LIBZATAR_KEEP_PREFIX
 
-// Utility
+#ifdef LIBZATAR_STRIP_PREFIX
+
 #define DEFAULT_GROWTH_RATE Z_DEFAULT_GROWTH_RATE
-#define Ok Z_Ok
-#define Err Z_Err
 #define in_range z_in_range
 #define get_file_size z_get_file_size
 #define get_fmt_size z_get_fmt_size
@@ -1934,10 +1796,8 @@ void z_cmd_clear(Z_Cmd *cmd)
 #define print_error z_print_error
 #define print_info z_print_info
 #define print_warning z_print_warning
-#define ensure_capacity z_ensure_capacity
-#define null_terminate z_null_terminate
-
-// Cursor
+#define ensure_capacity z_da_ensure_capacity
+#define null_terminate z_da_null_terminate
 #define COLOR_RESET Z_COLOR_RESET
 #define COLOR_RED Z_COLOR_RED
 #define COLOR_GREEN Z_COLOR_GREEN
@@ -2001,27 +1861,17 @@ void z_cmd_clear(Z_Cmd *cmd)
 #define wait_for_byte z_wait_for_byte
 #define read_escape_key z_read_escape_key
 #define read_key z_read_key
-
-// Vector
 #define VECTOR_DECLARE Z_VECTOR_DECLARE
 #define VECTOR_IMPLEMENT Z_VECTOR_IMPLEMENT
-
-// AVL Tree
 #define AVL_DECLARE Z_AVL_DECLARE
 #define AVL_IMPLEMENT Z_AVL_IMPLEMENT
-
-// Map
 #define MAP_DECLARE Z_MAP_DECLARE
 #define MAP_IMPLEMENT Z_MAP_IMPLEMENT
-
-// Matrix
 #define MAT_DECLARE Z_MAT_DECLARE
 #define MAT_AT Z_MAT_AT
 #define MAT_INIT Z_MAT_INIT
 #define MAT_RESIZE Z_MAT_RESIZE
 #define MAT_FREE Z_MAT_FREE
-
-// String
 #define String Z_String
 #define String_View Z_String_View
 #define String_Tokonizer Z_String_Tokonizer
@@ -2052,8 +1902,6 @@ void z_cmd_clear(Z_Cmd *cmd)
 #define str_free z_str_free
 #define str_clear z_str_clear
 #define read_whole_file z_read_whole_file
-
-// Path
 #define Pipe_Mode Z_Pipe_Mode
 #define Pipe_Mode_Read Z_Pipe_Mode_Read
 #define Pipe_Mode_Write Z_Pipe_Mode_Write
@@ -2073,8 +1921,6 @@ void z_cmd_clear(Z_Cmd *cmd)
 #define redirect_fd z_redirect_fd
 #define popen2 z_popen2
 #define mkdir z_mkdir
-
-// Cmd
 #define Cmd Z_Cmd
 #define should_rebuild z_should_rebuild
 #define should_rebuild_va z_should_rebuild_va
@@ -2087,8 +1933,8 @@ void z_cmd_clear(Z_Cmd *cmd)
 #define cmd_free z_cmd_free
 #define cmd_clear z_cmd_clear
 
-#endif // LIBZATAR_KEEP_PREFIX
-#endif
+#endif // LIBZATAR_STRIP_PREFIX
+#endif // LIBZATAR_STRIP_PREFIX_GAURD
 
 //   $       $       $       $       $       $       $        $        $
 //       $       $       $       $       $       $        $        $
