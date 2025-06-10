@@ -713,7 +713,7 @@ typedef struct {
 #define Z_SV(p, l)          ((Z_String_View){ .ptr = (p), .len = (l)            })
 #define Z_STR_TO_SV(s)      ((Z_String_View){ .ptr = (s).ptr, .len = (s).len    })
 #define Z_CSTR_TO_SV(s)     ((Z_String_View){ .ptr = (s), .len = strlen(s)      })
-#define Z_EMPTY_SV()        ((Z_String_View){ .ptr = NULL, .len = 0             })
+#define Z_EMPTY_SV()        ((Z_String_View){ .ptr = "", .len = 0               })
 
 const char *z_str_to_cstr(Z_String *s);
 Z_String z_str_new(const char *fmt, ...);
@@ -743,6 +743,7 @@ void z_str_free(Z_String *s);
 void z_str_clear(Z_String *s);
 
 bool z_read_whole_file(const char *pathname, Z_String *out);
+void z_str_get_line(FILE *fp, Z_String *out);
 
 //   *       *       *       *       *       *       *        *        *
 //       *       *       *       *       *       *        *        *
@@ -770,7 +771,7 @@ Z_String_View z_get_path_basename(Z_String_View path);
 
 Z_String_View z_get_home_path();
 
-Z_String z_expand_path(Z_String_View s);
+void z_expand_path(Z_String_View p, Z_String *out);
 Z_String z_compress_path(Z_String_View s);
 
 bool z_is_extention_equal(Z_String_View pathname, Z_String_View extention);
@@ -1173,8 +1174,8 @@ Z_String_View z_get_path_extention(Z_String_View path)
     }
 
     Z_String_View extention = {
-        .ptr = path.ptr + start,
-        .len = path.len - start,
+        .ptr = path.ptr + start + 1,
+        .len = path.len - start - 1,
     };
 
     return extention;
@@ -1197,19 +1198,21 @@ Z_String_View z_get_home_path()
     return Z_CSTR_TO_SV(home);
 }
 
-Z_String z_expand_path(Z_String_View p)
+void z_expand_path(Z_String_View p, Z_String *out)
 {
     if (p.len == 0) {
-        return (Z_String){0};
+        return;
     }
 
     Z_String_View home = z_get_home_path();
 
     if (p.ptr[0] == '~') {
-        return z_str_new("%.*s%.*s", home.len, home.ptr, p.len - 1, p.ptr + 1);
+        z_str_pushf(out, "%.*s%.*s", home.len, home.ptr, p.len - 1, p.ptr + 1);
+        return;
     }
 
-    return z_str_new("%.*s", p.len, p.ptr);
+    z_str_pushf(out, "%.*s", p.len, p.ptr);
+    return;
 }
 
 Z_String z_compress_path(Z_String_View p)
@@ -1546,11 +1549,43 @@ Z_String_View z_str_tok_next(Z_String_Tokonizer *tok)
     return Z_SV(start, tok->curr - start);
 }
 
-void z_str_trim(Z_String *s);
-void z_str_trim_cset(Z_String *s, Z_String_View cset);
+void z_str_trim(Z_String *s)
+{
+    z_str_trim_cset(s, Z_CSTR_TO_SV(" \f\t\v\n\r"));
+}
 
-Z_String_View z_str_view_trim(Z_String_View s);
-Z_String_View z_str_view_trim_cset(Z_String_View s, Z_String_View cset);
+void z_str_trim_cset(Z_String *s, Z_String_View cset)
+{
+    Z_String_View trimmed = z_str_view_trim_cset(Z_STR_TO_SV(*s), cset);
+    memmove(s->ptr, trimmed.ptr, trimmed.len);
+    s->len = trimmed.len;
+}
+
+Z_String_View z_str_view_trim(Z_String_View s)
+{
+    return z_str_view_trim_cset(s, Z_CSTR_TO_SV(" \f\t\v\n\r"));
+}
+
+Z_String_View z_str_view_trim_cset(Z_String_View s, Z_String_View cset)
+{
+    const char *start = s.ptr;
+    const char *end = s.ptr + s.len - 1;
+
+    while (start < end && z_str_chr(cset, *start) >= 0) {
+        start++;
+    }
+
+    while (start < end && z_str_chr(cset, *end) >= 0) {
+        end--;
+    }
+
+    Z_String_View ret = {
+        .ptr = start,
+        .len = end - start + 1,
+    };
+
+    return ret;
+}
 
 void z_str_print(Z_String_View s)
 {
@@ -1592,6 +1627,15 @@ bool z_read_whole_file(const char *pathname, Z_String *out)
 
     fclose(fp);
     return true;
+}
+
+void z_str_get_line(FILE *fp, Z_String *out)
+{
+    char buf[BUFSIZ];
+
+    while (fgets(buf, BUFSIZ, fp)) {
+        z_str_pushf(out, "%s", buf);
+    }
 }
 
 //   *       *       *       *       *       *       *        *        *
@@ -1731,6 +1775,7 @@ int z_cmd_run_async(Z_Cmd *cmd)
 
 	if (pid == -1) {
 		z_print_error("fork couln't create child");
+        return -1;
 	} else if (pid == 0) {
 		exit(execvp(cmd->ptr[0], cmd->ptr));
 	} else {
