@@ -8,21 +8,20 @@
 
 int main(void)
 {
-    Z_String f = z_str_new("");
-    if (!z_read_whole_file("main.c", &f)) {
+    Z_String fileContent = {0};
+
+    if (!z_read_whole_file("main.c", &fileContent)) {
         return 1;
     }
 
-    Z_String_Tokonizer tok;
-    z_str_tok_init(&tok, Z_STR_TO_SV(f), Z_CSTR_TO_SV("\n "));
-
-    Z_String_View line = z_str_tok_next(&tok);
+    Z_String_View delim = Z_CSTR_TO_SV("\n");
+    Z_String_View line = z_str_tok_start(Z_STR_TO_SV(fileContent), delim);
 
     while (line.len > 0) {
         printf("-- ");
         z_str_println(line);
-        line = z_str_tok_next(&tok);
+        line = z_str_tok_next(Z_STR_TO_SV(fileContent), line, delim);
     }
 
-    z_str_free(&f);
+    z_str_free(&fileContent);
 }
