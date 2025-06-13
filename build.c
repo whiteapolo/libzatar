@@ -11,7 +11,7 @@ int main(int argc, char **argv)
     cmd_append(&cmd, "-o", "exe");
     cmd_append(&cmd, "-Wextra", "-Wall");
     cmd_append(&cmd, "-g");
-    cmd_append(&cmd, "-O3");
+    cmd_append(&cmd, "-O0");
 
     cmd_run_async(&cmd);
 

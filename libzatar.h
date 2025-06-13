@@ -1486,24 +1486,14 @@ char z_str_top_char(Z_String_View s)
 
 int z_str_compare(Z_String_View s1, Z_String_View s2)
 {
-    if (s1.len > s2.len) {
-        return 1;
-    } else if (s1.len < s2.len) {
-        return -1;
-    } else {
-        return memcmp(s1.ptr, s2.ptr, s1.len);
-    }
+    if (s1.len > s2.len) return 1;
+    if (s1.len < s2.len) return -1;
+    return memcmp(s1.ptr, s2.ptr, s1.len);
 }
 
 int z_str_compare_n(Z_String_View s1, Z_String_View s2, int n)
 {
-    if (s1.len > s2.len) {
-        return 1;
-    } else if (s1.len < s2.len) {
-        return -1;
-    } else {
-        return memcmp(s1.ptr, s2.ptr, z_min3(s1.len, s2.len, n));
-    }
+    return memcmp(s1.ptr, s2.ptr, z_min3(s1.len, s2.len, n));
 }
 
 void z_str_replace(Z_String *s, Z_String_View target, Z_String_View replacement);
@@ -1576,6 +1566,10 @@ Z_String_View z_str_view_trim(Z_String_View s)
 
 Z_String_View z_str_view_trim_cset(Z_String_View s, Z_String_View cset)
 {
+    if (s.len == 0) {
+        return Z_EMPTY_SV();
+    }
+
     const char *start = s.ptr;
     const char *end = s.ptr + s.len - 1;
 
