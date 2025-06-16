@@ -6,6 +6,9 @@
 #define LIBZATAR_IMPLEMENTATION
 #include "libzatar.h"
 
+Z_AVL_DECLARE(Avl_Node, void *, void *, avl);
+Z_AVL_IMPLEMENT(Avl_Node, void *, void *, avl);
+
 int main(void)
 {
     // Z_String fileContent = {0};
