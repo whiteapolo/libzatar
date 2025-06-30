@@ -40,6 +40,7 @@
 #define Z_DEFAULT_GROWTH_RATE 2
 
 #define CALL_F_IF_NOT_NULL(f, ...) if (f) f(__VA_ARGS__)
+#define Z_ARRAY_LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 
 int z_in_range(int min, int val, int max);
 int z_get_file_size(FILE *fp);
@@ -184,22 +185,22 @@ typedef struct type_name {                                             \
 void prefix##_put(type_name **root,                                    \
                      K key,                                            \
                      V value,                                          \
-                     int cmp_keys(const K, const K),                               \
+                     int cmp_keys(const K, const K),                   \
                      void free_key(K),                                 \
                      void free_value(V));                              \
                                                                        \
 bool prefix##_is_exists(type_name *root,                               \
                         K key,                                         \
-                        int cmp_keys(const K, const K));                           \
+                        int cmp_keys(const K, const K));               \
                                                                        \
 bool prefix##_find(type_name *root,                                    \
                 const K key,                                           \
-                int cmp_keys(const K, const K),                                    \
+                int cmp_keys(const K, const K),                        \
                 V *value);                                             \
                                                                        \
 void prefix##_remove(type_name **root,                                 \
                      K key,                                            \
-                     int cmp_keys(const K, const K),                               \
+                     int cmp_keys(const K, const K),                   \
                      void free_key(K),                                 \
                      void free_value(V));                              \
                                                                        \
@@ -329,17 +330,17 @@ type_name *prefix##_find_node(type_name *root, const K key, int cmp_keys(const K
                                                                               \
 bool prefix##_is_exists(type_name *root,                                      \
                         K key,                                                \
-                        int cmp_keys(const K, const K))                                   \
+                        int cmp_keys(const K, const K))                       \
 {                                                                             \
-    return prefix##_find_node(root, key, cmp_keys) != NULL;                        \
+    return prefix##_find_node(root, key, cmp_keys) != NULL;                   \
 }                                                                             \
                                                                               \
 bool prefix##_find(type_name *root,                                           \
                 const K key,                                                  \
-                int cmp_keys(const K, const K),                                           \
+                int cmp_keys(const K, const K),                               \
                 V *value)                                                     \
 {                                                                             \
-    type_name *node = prefix##_find_node(root, key, cmp_keys);                     \
+    type_name *node = prefix##_find_node(root, key, cmp_keys);                \
                                                                               \
     if (node != NULL) {                                                       \
         *value = node->value;                                                 \
@@ -352,7 +353,7 @@ bool prefix##_find(type_name *root,                                           \
 void prefix##_put(type_name **root,                                           \
                      K key,                                                   \
                      V value,                                                 \
-                     int cmp_keys(const K, const K),                                      \
+                     int cmp_keys(const K, const K),                          \
                      void free_key(K),                                        \
                      void free_value(V))                                      \
 {                                                                             \
@@ -371,7 +372,7 @@ void prefix##_put(type_name **root,                                           \
                 free_key, free_value);                                        \
     } else {                                                                  \
         CALL_F_IF_NOT_NULL(free_value, (*root)->value);                       \
-        CALL_F_IF_NOT_NULL(free_key, key);                                  \
+        CALL_F_IF_NOT_NULL(free_key, key);                                    \
         (*root)->value = value;                                               \
     }                                                                         \
                                                                               \
@@ -392,7 +393,7 @@ void prefix##_put(type_name **root,                                           \
                                                                               \
 void prefix##_remove(type_name **root,                                        \
                      K key,                                                   \
-                     int cmp_keys(const K, const K),                                      \
+                     int cmp_keys(const K, const K),                          \
                      void free_key(K),                                        \
                      void free_value(V))                                      \
 {                                                                             \
@@ -458,17 +459,10 @@ void prefix##_order_traverse(type_name *root,                                 \
         return;                                                               \
     }                                                                         \
                                                                               \
-    prefix##_order_traverse(root->left, action, arg);                              \
+    prefix##_order_traverse(root->left, action, arg);                         \
                                                                               \
     action(root->key, root->value, arg);                                      \
-    prefix##_order_traverse(root->right, action, arg);                             \
-}                                                                             \
-                                                                              \
-void print_char_n_times(char c, int n)                                        \
-{                                                                             \
-    for (int i = 0; i < n; i++) {                                             \
-        putchar(c);                                                           \
-    }                                                                         \
+    prefix##_order_traverse(root->right, action, arg);                        \
 }                                                                             \
                                                                               \
 void prefix##_print(type_name *root,                                          \
@@ -479,10 +473,10 @@ void prefix##_print(type_name *root,                                          \
         return;                                                               \
     }                                                                         \
                                                                               \
-    print_char_n_times(' ', padding);                                         \
+    printf("%*c", padding, ' ');                                              \
     print(root->key, root->value, arg);                                       \
-    prefix##_print(root->right, print, arg, padding + 4);                          \
-    prefix##_print(root->left, print, arg, padding + 4);                           \
+    prefix##_print(root->right, print, arg, padding + 4);                     \
+    prefix##_print(root->left, print, arg, padding + 4);                      \
 }                                                                             \
                                                                               \
 void prefix##_free(type_name *root,                                           \
@@ -496,8 +490,8 @@ void prefix##_free(type_name *root,                                           \
     CALL_F_IF_NOT_NULL(free_key, root->key);                                  \
     CALL_F_IF_NOT_NULL(free_value, root->value);                              \
                                                                               \
-    prefix##_free(root->left, free_key, free_value);                               \
-    prefix##_free(root->right, free_key, free_value);                              \
+    prefix##_free(root->left, free_key, free_value);                          \
+    prefix##_free(root->right, free_key, free_value);                         \
                                                                               \
     free(root);                                                               \
 }
@@ -515,10 +509,10 @@ Z_AVL_DECLARE(_avl_##type_name, K, V, _avl_##prefix)                   \
                                                                        \
 typedef struct {                                                       \
     _avl_##type_name *root;                                            \
-    int (*cmp_keys)(const K, const K);                                           \
+    int (*cmp_keys)(const K, const K);                                 \
 } type_name;                                                           \
                                                                        \
-void prefix##_init(type_name *m, int cmp_keys(const K, const K));                  \
+void prefix##_init(type_name *m, int cmp_keys(const K, const K));      \
                                                                        \
 void prefix##_put(type_name *m,                                        \
                   K key,                                               \
@@ -546,7 +540,7 @@ void prefix##_free(type_name *m,                                       \
                                                                        \
 Z_AVL_IMPLEMENT(_avl_##type_name, K, V, _avl_##prefix)                 \
                                                                        \
-void prefix##_init(type_name *m, int cmp_keys(const K, const K))                   \
+void prefix##_init(type_name *m, int cmp_keys(const K, const K))       \
 {                                                                      \
     m->cmp_keys = cmp_keys;                                            \
     m->root = NULL;                                                    \
@@ -672,6 +666,9 @@ char *z_sv_to_cstr(Z_String_View s);
 
 bool z_str_contains(Z_String_View s, char c);
 int z_str_chr(Z_String_View s, char c);
+
+#define Z_STR_TOK_FOREACH(s, delim, tok) \
+    for (Z_String_View tok = z_str_tok_start(s, delim); tok.len > 0; tok = z_str_tok_next(s, tok, delim))
 
 Z_String_View z_str_tok_start(Z_String_View s, Z_String_View delim);
 Z_String_View z_str_tok_next(Z_String_View s, Z_String_View previous_token, Z_String_View delim);
