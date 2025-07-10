@@ -52,6 +52,7 @@ int z_max(int a, int b);
 int z_min(int a, int b);
 int z_max3(int a, int b, int c);
 int z_min3(int a, int b, int c);
+void z_die_format(const char *fmt, ...);
 
 int z_print_error(const char *fmt, ...);
 int z_print_info(const char *fmt, ...);
@@ -72,6 +73,13 @@ int z_print_warning(const char *fmt, ...);
         (da)->ptr[(da)->len++] = (item);           \
     } while (0)
 
+#define z_da_append_da(dest, source)                \
+    do {                                            \
+        for (int i = 0; i < (source)->len; i++) {   \
+            z_da_append((dest), (source)->ptr[i]);  \
+        }                                           \
+    } while (0)
+
 #define z_da_peek(da) ((da)->ptr[(da)->len - 1])
 #define z_da_pop(da) ((da)->ptr[--(da)->len])
 
@@ -80,6 +88,9 @@ int z_print_warning(const char *fmt, ...);
         z_da_ensure_capacity((da), (da)->len + 1);             \
         memset(&(da)->ptr[(da)->len], 0, sizeof(*(da)->ptr));  \
     } while (0)
+
+#define z_da_foreach(it, da) \
+    for (typeof((da)->ptr) it = da->ptr; it < da->ptr + da->len; it++)
 
 // ----------------------------------------------------------------------
 //
@@ -653,6 +664,7 @@ typedef struct {
 const char *z_str_to_cstr(Z_String *s);
 Z_String z_str_new_format(const char *fmt, ...);
 Z_String z_str_new_format_va(const char *fmt, va_list ap);
+Z_String z_str_new_from(Z_String_View s);
 void z_str_append_format(Z_String *s, const char *fmt, ...);
 void z_str_append_format_va(Z_String *s, const char *fmt, va_list ap);
 void z_str_append_str(Z_String *dst, Z_String_View src);
@@ -663,11 +675,12 @@ int z_str_compare(Z_String_View s1, Z_String_View s2);
 int z_str_compare_n(Z_String_View s1, Z_String_View s2, int n);
 void z_str_replace(Z_String *s, Z_String_View target, Z_String_View replacement);
 char *z_sv_to_cstr(Z_String_View s);
+bool z_sv_ends_with(Z_String_View s, Z_String_View end);
 
 bool z_str_contains(Z_String_View s, char c);
 int z_str_chr(Z_String_View s, char c);
 
-#define Z_STR_TOK_FOREACH(s, delim, tok) \
+#define z_str_tok_foreach(s, delim, tok) \
     for (Z_String_View tok = z_str_tok_start(s, delim); tok.len > 0; tok = z_str_tok_next(s, tok, delim))
 
 Z_String_View z_str_tok_start(Z_String_View s, Z_String_View delim);
@@ -721,7 +734,6 @@ bool z_redirect_fd(int src_fd, const char *dst_pathname);
 bool z_popen2(char *path, char *argv[], FILE *ppipe[2]);
 
 bool z_mkdir(const char *pathname);
-
 
 // ----------------------------------------------------------------------
 //
@@ -859,6 +871,14 @@ int z_min3(int a, int b, int c)
 int z_max3(int a, int b, int c)
 {
     return z_max(a, z_max(b, c));
+}
+
+void z_die_format(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    exit(EXIT_FAILURE);
 }
 
 // ----------------------------------------------------------------------
@@ -1296,6 +1316,11 @@ Z_String z_str_new_format_va(const char *fmt, va_list ap)
     return s;
 }
 
+Z_String z_str_new_from(Z_String_View s)
+{
+    return z_str_new_format("%.*s", s.len, s.ptr);
+}
+
 void z_str_append_format(Z_String *s, const char *fmt, ...)
 {
     va_list ap;
@@ -1356,6 +1381,20 @@ void z_str_replace(Z_String *s, Z_String_View target, Z_String_View replacement)
 char *z_sv_to_cstr(Z_String_View s)
 {
     return strndup(s.ptr, s.len);
+}
+
+bool z_sv_ends_with(Z_String_View s, Z_String_View end)
+{
+    if (s.len < end.len) {
+        return false;
+    }
+
+    Z_String_View endings = {
+        .ptr = s.ptr + s.len - end.len,
+        .len = end.len,
+    };
+
+    return !z_str_compare(endings, end);
 }
 
 bool z_str_contains(Z_String_View s, char c)
