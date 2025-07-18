@@ -58,13 +58,13 @@ int z_print_error(const char *fmt, ...);
 int z_print_info(const char *fmt, ...);
 int z_print_warning(const char *fmt, ...);
 
-#define z_da_ensure_capacity(da, cap)                                                  \
-    do {                                                                               \
-        if ((da)->capacity < (cap)) {                                                  \
-            int new_capacity = z_max((cap), (da)->capacity * Z_DEFAULT_GROWTH_RATE);   \
-            (da)->capacity = new_capacity;                                             \
-            (da)->ptr = realloc((da)->ptr, sizeof((da)->ptr[0]) * (da)->capacity);     \
-        }                                                                              \
+#define z_da_ensure_capacity(da, _cap)                                           \
+    do {                                                                         \
+        if ((da)->cap < (_cap)) {                                                \
+            int new_cap = z_max((_cap), (da)->cap * Z_DEFAULT_GROWTH_RATE);      \
+            (da)->cap = new_cap;                                                 \
+            (da)->ptr = realloc((da)->ptr, sizeof((da)->ptr[0]) * (da)->cap);    \
+        }                                                                        \
     } while (0)
 
 #define z_da_append(da, item)                      \
@@ -91,6 +91,11 @@ int z_print_warning(const char *fmt, ...);
 
 #define z_da_foreach(it, da) \
     for (typeof((da)->ptr) it = da->ptr; it < da->ptr + da->len; it++)
+
+#define z_da_remove(da, i) do {                                                                          \
+        memmove(&((da)->ptr[(i)]), &((da)->ptr[(i) + 1]), (((da)->len - (i) - 1) * sizeof(*(da)->ptr))); \
+        (da)->len--;                                                                                     \
+    } while (0)
 
 // ----------------------------------------------------------------------
 //
@@ -648,7 +653,7 @@ typedef struct {                  \
 typedef struct {
     char *ptr;
     int len;
-    int capacity;
+    int cap;
 } Z_String;
 
 typedef struct {
@@ -744,7 +749,7 @@ bool z_mkdir(const char *pathname);
 typedef struct {
 	char **ptr;
 	int len;
-    int capacity;
+    int cap;
 } Z_Cmd;
 
 bool _z_should_rebuild(const char *target, ...);
@@ -760,6 +765,23 @@ int _z_run_async(const char *arg, ...);
 #define z_run_async(arg, ...) _z_run_async(arg, ##__VA_ARGS__, NULL)
 void z_cmd_free(Z_Cmd *cmd);
 void z_cmd_clear(Z_Cmd *cmd);
+
+// ----------------------------------------------------------------------
+//
+//   arena header
+//
+// ----------------------------------------------------------------------
+
+typedef struct {
+    void **ptr;
+    int len;
+    int cap;
+} Z_Arena;
+
+void *z_arena_malloc(Z_Arena *arena, size_t size);
+void *z_arena_realloc(Z_Arena *arena, void *ptr, size_t new_size);
+void z_arena_free(Z_Arena *arena, void *ptr);
+void z_arena_free_all(Z_Arena *arena);
 
 #ifdef LIBZATAR_IMPLEMENTATION
 
@@ -1498,7 +1520,7 @@ void z_str_free(Z_String *s)
     free(s->ptr);
     s->ptr = NULL;
     s->len = 0;
-    s->capacity = 0;
+    s->cap = 0;
 }
 
 void z_str_clear(Z_String *s)
@@ -1603,7 +1625,7 @@ void z_cmd_init(Z_Cmd *cmd)
 {
     cmd->ptr = NULL;
     cmd->len = 0;
-    cmd->capacity = 0;
+    cmd->cap = 0;
 }
 
 void _z_cmd_append(Z_Cmd *cmd, ...)
@@ -1692,6 +1714,66 @@ void z_cmd_clear(Z_Cmd *cmd)
     }
 
     cmd->len = 0;
+}
+
+// ----------------------------------------------------------------------
+//
+//   arena implementation
+//
+// ----------------------------------------------------------------------
+
+void *z_arena_malloc(Z_Arena *arena, size_t size)
+{
+    z_da_append(arena, malloc(size));
+    return z_da_peek(arena);
+}
+
+void *z_arena_realloc(Z_Arena *arena, void *ptr, size_t new_size)
+{
+    if (!ptr) {
+        return z_arena_malloc(arena, new_size);
+    }
+
+    if (!new_size) {
+        z_arena_free(arena, ptr);
+        return NULL;
+    }
+
+    z_da_foreach(mem, arena) {
+        if (*mem == ptr) {
+            *mem = realloc(*mem, new_size);
+            return *mem;
+        }
+    }
+
+    z_die_format("pointer: '%p' was not alocated in Z_Arena\n", ptr);
+    return NULL;
+}
+
+void z_arena_free(Z_Arena *arena, void *ptr)
+{
+    if (!ptr) {
+        return;
+    }
+
+    z_da_foreach(mem, arena) {
+        if (*mem == ptr) {
+            free(*mem);
+            z_da_remove(arena, mem - arena->ptr);
+            return;
+        }
+    }
+
+    z_die_format("pointer: '%p' was not alocated in Z_Arena\n", ptr);
+}
+
+void z_arena_free_all(Z_Arena *arena)
+{
+    z_da_foreach(ptr, arena) {
+        free(*ptr);
+    }
+
+    free(arena->ptr);
 }
 
 #endif // end implementation

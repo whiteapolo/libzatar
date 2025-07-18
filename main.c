@@ -1,39 +1,35 @@
+#include <assert.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define LIBZATAR_IMPLEMENTATION
 #include "libzatar.h"
 
-Z_AVL_DECLARE(Avl_Node, void *, void *, avl);
-Z_AVL_IMPLEMENT(Avl_Node, void *, void *, avl);
+int main() {
 
-int main(void)
-{
-    // Z_String fileContent = {0};
+ Z_Arena arena = {0};
 
-    // if (!z_read_whole_file("main.c", &fileContent)) {
-    //     return 1;
-    // }
+    char *s1 = z_arena_malloc(&arena, 10);
+    strcpy(s1, "hello");
+    printf("s1: %s\n", s1);
 
-    // Z_String_View delim = Z_CSTR_TO_SV("\n");
-    // Z_String_View line = z_str_tok_start(Z_STR_TO_SV(fileContent), delim);
+    s1 = z_arena_realloc(&arena, s1, 20);
+    strcat(s1, " world");
+    printf("s1 after realloc: %s\n", s1);
 
-    // while (line.len > 0) {
-    //     printf("-- ");
-    //     z_str_println(line);
-    //     line = z_str_tok_next(Z_STR_TO_SV(fileContent), line, delim);
-    // }
+    char *s2 = z_arena_malloc(&arena, 15);
+    strcpy(s2, "goodbye");
+    printf("s2: %s\n", s2);
 
-    // z_str_free(&fileContent);
+    z_arena_free(&arena, s1);
+    printf("s1 freed\n");
 
-    Z_String s = z_str_new_format("hey    ");
+    z_arena_free_all(&arena);
+    printf("arena freed all\n");
 
-    z_str_trim(&s);
-    printf("'%s'\n", z_str_to_cstr(&s));
-
-
-
-
+    return 0;
 }
