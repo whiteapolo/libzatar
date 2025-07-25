@@ -202,17 +202,15 @@ typedef struct Z_Avl_Node {
 } Z_Avl_Node;
 
 void z_avl_put(Z_Avl_Node **root, void *key, void *value,
-               int cmp_keys(const void *, const void *), void free_key(void *),
+               Z_Compare_Fn compare_keys, void free_key(void *),
                void free_value(void *));
 
-bool z_avl_is_exists(Z_Avl_Node *root, void *key,
-                     int cmp_keys(const void *, const void *));
+bool z_avl_is_exists(Z_Avl_Node *root, void *key, Z_Compare_Fn compare_keys);
 
-bool z_avl_find(Z_Avl_Node *root, const void *key,
-                int cmp_keys(const void *, const void *), void **value);
+bool z_avl_find(Z_Avl_Node *root, const void *key, Z_Compare_Fn compare_keys,
+                void **value);
 
-void z_avl_remove(Z_Avl_Node **root, void *key,
-                  int cmp_keys(const void *, const void *),
+void z_avl_remove(Z_Avl_Node **root, void *key, Z_Compare_Fn compare_keys,
                   void free_key(void *), void free_value(void *));
 
 void z_avl_order_traverse(Z_Avl_Node *root,
@@ -233,11 +231,9 @@ void z_avl_free(Z_Avl_Node *root, void free_key(void *),
 // ----------------------------------------------------------------------
 
 typedef struct {
-  int (*cmp_keys)(const void *, const void *);
+  Z_Compare_Fn compare_keys;
   Z_Avl_Node *root;
 } Z_Map;
-
-void z_map_init(Z_Map *m, int cmp_keys(const void *, const void *));
 
 void z_map_put(Z_Map *m, void *key, void *value, void free_key(void *),
                void free_value(void *));
@@ -254,43 +250,6 @@ void z_map_order_traverse(const Z_Map *m,
                           void *arg);
 
 void z_map_free(Z_Map *m, void free_key(void *), void free_value(void *));
-
-#define Z_MAP_IMPLEMENT(type_name, K, V, prefix)                               \
-                                                                               \
-  Z_AVL_IMPLEMENT(_avl_##type_name, K, V, _avl_##prefix)                       \
-                                                                               \
-  void prefix##_init(type_name *m, int cmp_keys(const K, const K)) {           \
-    m->cmp_keys = cmp_keys;                                                    \
-    m->root = NULL;                                                            \
-  }                                                                            \
-                                                                               \
-  void prefix##_put(type_name *m, K key, V value, void free_key(K),            \
-                    void free_value(V)) {                                      \
-    _avl_##prefix##_put(&m->root, key, value, m->cmp_keys, free_key,           \
-                        free_value);                                           \
-  }                                                                            \
-                                                                               \
-  bool prefix##_find(const type_name *m, const K key, V *value) {              \
-    return _avl_##prefix##_find(m->root, key, m->cmp_keys, value);             \
-  }                                                                            \
-                                                                               \
-  bool prefix##_is_exists(const type_name *m, K key) {                         \
-    return _avl_##prefix##_is_exists(m->root, key, m->cmp_keys);               \
-  }                                                                            \
-                                                                               \
-  void prefix##_remove(type_name *m, K key, void free_key(K),                  \
-                       void free_value(V)) {                                   \
-    _avl_##prefix##_remove(&m->root, key, m->cmp_keys, free_key, free_value);  \
-  }                                                                            \
-                                                                               \
-  void prefix##_order_traverse(                                                \
-      const type_name *m, void action(K key, V value, void *arg), void *arg) { \
-    _avl_##prefix##_order_traverse(m->root, action, arg);                      \
-  }                                                                            \
-                                                                               \
-  void prefix##_free(type_name *m, void free_key(K), void free_value(V)) {     \
-    _avl_##prefix##_free(m->root, free_key, free_value);                       \
-  }
 
 // ----------------------------------------------------------------------
 //
@@ -449,7 +408,6 @@ bool z_should_rebuild_va(const char *target, va_list ap);
 #define z_should_rebuild(target, ...)                                          \
   _z_should_rebuild(target, ##__VA_ARGS__, NULL)
 void z_rebuild_yourself(const char *src_pathname, char **argv);
-void z_cmd_init(Z_Cmd *cmd);
 #define z_cmd_append(cmd, ...) _z_cmd_append(cmd, __VA_ARGS__, NULL)
 void _z_cmd_append(Z_Cmd *cmd, ...);
 void z_cmd_append_va(Z_Cmd *cmd, va_list ap);
@@ -654,12 +612,12 @@ Z_Avl_Node *z_avl_get_min(Z_Avl_Node *root) {
 }
 
 Z_Avl_Node *z_avl_find_node(Z_Avl_Node *root, const void *key,
-                            int cmp_keys(const void *, const void *)) {
+                            Z_Compare_Fn compare_keys) {
 
   Z_Avl_Node *curr = root;
 
   while (curr != NULL) {
-    int cmp_res = cmp_keys(key, curr->key);
+    int cmp_res = compare_keys(key, curr->key);
     if (cmp_res > 0) {
       curr = curr->right;
     } else if (cmp_res < 0) {
@@ -672,14 +630,13 @@ Z_Avl_Node *z_avl_find_node(Z_Avl_Node *root, const void *key,
   return NULL;
 }
 
-bool z_avl_is_exists(Z_Avl_Node *root, void *key,
-                     int cmp_keys(const void *, const void *)) {
-  return z_avl_find_node(root, key, cmp_keys) != NULL;
+bool z_avl_is_exists(Z_Avl_Node *root, void *key, Z_Compare_Fn compare_keys) {
+  return z_avl_find_node(root, key, compare_keys) != NULL;
 }
 
-bool z_avl_find(Z_Avl_Node *root, const void *key,
-                int cmp_keys(const void *, const void *), void **value) {
-  Z_Avl_Node *node = z_avl_find_node(root, key, cmp_keys);
+bool z_avl_find(Z_Avl_Node *root, const void *key, Z_Compare_Fn compare_keys,
+                void **value) {
+  Z_Avl_Node *node = z_avl_find_node(root, key, compare_keys);
 
   if (node != NULL) {
     *value = node->value;
@@ -690,17 +647,17 @@ bool z_avl_find(Z_Avl_Node *root, const void *key,
 }
 
 void z_avl_put(Z_Avl_Node **root, void *key, void *value,
-               int cmp_keys(const void *, const void *), void free_key(void *),
+               Z_Compare_Fn compare_keys, void free_key(void *),
                void free_value(void *)) {
   if (*root == NULL) {
     *root = z_avl_new(key, value);
     return;
   }
-  int cmp_res = cmp_keys(key, (*root)->key);
+  int cmp_res = compare_keys(key, (*root)->key);
   if (cmp_res > 0) {
-    z_avl_put(&(*root)->right, key, value, cmp_keys, free_key, free_value);
+    z_avl_put(&(*root)->right, key, value, compare_keys, free_key, free_value);
   } else if (cmp_res < 0) {
-    z_avl_put(&(*root)->left, key, value, cmp_keys, free_key, free_value);
+    z_avl_put(&(*root)->left, key, value, compare_keys, free_key, free_value);
   } else {
     if (free_value)
       free_value((*root)->value);
@@ -710,32 +667,31 @@ void z_avl_put(Z_Avl_Node **root, void *key, void *value,
   }
   z_avl_update_height(*root);
   int bf = z_avl_get_balance_factor(*root);
-  if (bf > 1 && cmp_keys(key, (*root)->left->key) < 0) {
+  if (bf > 1 && compare_keys(key, (*root)->left->key) < 0) {
     z_avl_right_rotate(root);
-  } else if (bf < -1 && cmp_keys(key, (*root)->right->key) > 0) {
+  } else if (bf < -1 && compare_keys(key, (*root)->right->key) > 0) {
     z_avl_left_rotate(root);
-  } else if (bf > 1 && cmp_keys(key, (*root)->left->key) > 0) {
+  } else if (bf > 1 && compare_keys(key, (*root)->left->key) > 0) {
     z_avl_left_right_rotate(root);
-  } else if (bf < -1 && cmp_keys(key, (*root)->right->key) < 0) {
+  } else if (bf < -1 && compare_keys(key, (*root)->right->key) < 0) {
     z_avl_right_left_rotate(root);
   }
 }
-void z_avl_remove(Z_Avl_Node **root, void *key,
-                  int cmp_keys(const void *, const void *),
+void z_avl_remove(Z_Avl_Node **root, void *key, Z_Compare_Fn compare_keys,
                   void free_key(void *), void free_value(void *)) {
   if (*root == NULL) {
     return;
   }
 
-  int cmp_res = cmp_keys(key, (*root)->key);
+  int cmp_res = compare_keys(key, (*root)->key);
 
   if (cmp_res > 0) {
-    z_avl_remove(&((*root)->right), key, cmp_keys, free_key, free_value);
+    z_avl_remove(&((*root)->right), key, compare_keys, free_key, free_value);
     return;
   }
 
   if (cmp_res < 0) {
-    z_avl_remove(&((*root)->left), key, cmp_keys, free_key, free_value);
+    z_avl_remove(&((*root)->left), key, compare_keys, free_key, free_value);
     return;
   }
 
@@ -760,7 +716,7 @@ void z_avl_remove(Z_Avl_Node **root, void *key,
   Z_Avl_Node *succesor = z_avl_get_min((*root)->right);
   (*root)->key = succesor->key;
   (*root)->value = succesor->value;
-  z_avl_remove(&((*root)->right), succesor->key, cmp_keys, NULL, NULL);
+  z_avl_remove(&((*root)->right), succesor->key, compare_keys, NULL, NULL);
   z_avl_update_height(*root);
 
   int bf = z_avl_get_balance_factor(*root);
@@ -821,27 +777,22 @@ void z_avl_free(Z_Avl_Node *root, void free_key(void *),
 //
 // ----------------------------------------------------------------------
 
-void z_map_init(Z_Map *m, int cmp_keys(const void *, const void *)) {
-  m->cmp_keys = cmp_keys;
-  m->root = NULL;
-}
-
 void z_map_put(Z_Map *m, void *key, void *value, void free_key(void *),
                void free_value(void *)) {
-  z_avl_put(&m->root, key, value, m->cmp_keys, free_key, free_value);
+  z_avl_put(&m->root, key, value, m->compare_keys, free_key, free_value);
 }
 
 bool z_map_find(const Z_Map *m, const void *key, void **value) {
-  return z_avl_find(m->root, key, m->cmp_keys, value);
+  return z_avl_find(m->root, key, m->compare_keys, value);
 }
 
 bool z_map_is_exists(const Z_Map *m, void *key) {
-  return z_avl_is_exists(m->root, key, m->cmp_keys);
+  return z_avl_is_exists(m->root, key, m->compare_keys);
 }
 
 void z_map_remove(Z_Map *m, void *key, void free_key(void *),
                   void free_value(void *)) {
-  z_avl_remove(&m->root, key, m->cmp_keys, free_key, free_value);
+  z_avl_remove(&m->root, key, m->compare_keys, free_key, free_value);
 }
 
 void z_map_order_traverse(const Z_Map *m,
@@ -1510,12 +1461,6 @@ void z_rebuild_yourself(const char *src_pathname, char **argv) {
 
   status = execvp(argv[0], argv);
   exit(1);
-}
-
-void z_cmd_init(Z_Cmd *cmd) {
-  cmd->ptr = NULL;
-  cmd->len = 0;
-  cmd->cap = 0;
 }
 
 void _z_cmd_append(Z_Cmd *cmd, ...) {
