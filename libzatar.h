@@ -43,6 +43,8 @@
   f(__VA_ARGS__)
 #define Z_ARRAY_LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 
+#define Z_HEAP_ALLOC(value, type) z_memdup(&(type){value}, sizeof(type))
+
 typedef int (*Z_Compare_Fn)(const void *, const void *);
 
 int z_in_range(int min, int val, int max);
@@ -93,7 +95,7 @@ int z_print_warning(const char *fmt, ...);
   } while (0)
 
 #define z_da_foreach(it, da)                                                   \
-  for (typeof((da)->ptr) it = da->ptr; it < da->ptr + da->len; it++)
+  for (typeof((da)->ptr) it = (da)->ptr; it < (da)->ptr + (da)->len; it++)
 
 #define z_da_remove(da, i)                                                     \
   do {                                                                         \
@@ -101,6 +103,27 @@ int z_print_warning(const char *fmt, ...);
             (((da)->len - (i)-1) * sizeof(*(da)->ptr)));                       \
     (da)->len--;                                                               \
   } while (0)
+
+#define z_da_free(da) free((da)->ptr)
+
+// ----------------------------------------------------------------------
+//
+//   arena header
+//
+// ----------------------------------------------------------------------
+
+typedef struct {
+  void **ptr;
+  int len;
+  int cap;
+} Z_Arena;
+
+void *z_arena_malloc(Z_Arena *arena, size_t size);
+void *z_arena_realloc(Z_Arena *arena, void *ptr, size_t new_size);
+void z_arena_free(Z_Arena *arena, void *ptr);
+void z_arena_free_all(Z_Arena *arena);
+
+char *z_arena_strdup(Z_Arena *arena, const char *s);
 
 // ----------------------------------------------------------------------
 //
@@ -207,8 +230,7 @@ void z_avl_put(Z_Avl_Node **root, void *key, void *value,
 
 bool z_avl_is_exists(Z_Avl_Node *root, void *key, Z_Compare_Fn compare_keys);
 
-bool z_avl_find(Z_Avl_Node *root, const void *key, Z_Compare_Fn compare_keys,
-                void **value);
+void *z_avl_get(Z_Avl_Node *root, const void *key, Z_Compare_Fn compare_keys);
 
 void z_avl_remove(Z_Avl_Node **root, void *key, Z_Compare_Fn compare_keys,
                   void free_key(void *), void free_value(void *));
@@ -238,7 +260,7 @@ typedef struct {
 void z_map_put(Z_Map *m, void *key, void *value, void free_key(void *),
                void free_value(void *));
 
-bool z_map_find(const Z_Map *m, const void *key, void **value);
+void *z_map_get(const Z_Map *m, const void *key);
 
 bool z_map_is_exists(const Z_Map *m, void *key);
 
@@ -309,6 +331,12 @@ typedef struct {
   int len;
 } Z_String_View;
 
+typedef struct {
+  char **ptr;
+  int len;
+  int cap;
+} Z_File_Paths;
+
 #define Z_SV(p, l) ((Z_String_View){.ptr = (p), .len = (l)})
 #define Z_STR(s) ((Z_String_View){.ptr = (s).ptr, .len = (s).len})
 #define Z_CSTR(s) ((Z_String_View){.ptr = (s), .len = strlen(s)})
@@ -353,6 +381,7 @@ void z_str_free(Z_String *s);
 void z_str_clear(Z_String *s);
 
 bool z_read_whole_file(const char *pathname, Z_String *out);
+bool z_read_whole_dir(const char *pathname, Z_File_Paths *out, Z_Arena *arena);
 void z_str_get_line(FILE *fp, Z_String *out);
 
 // ----------------------------------------------------------------------
@@ -416,23 +445,6 @@ int _z_run_async(const char *arg, ...);
 #define z_run_async(arg, ...) _z_run_async(arg, ##__VA_ARGS__, NULL)
 void z_cmd_free(Z_Cmd *cmd);
 void z_cmd_clear(Z_Cmd *cmd);
-
-// ----------------------------------------------------------------------
-//
-//   arena header
-//
-// ----------------------------------------------------------------------
-
-typedef struct {
-  void **ptr;
-  int len;
-  int cap;
-} Z_Arena;
-
-void *z_arena_malloc(Z_Arena *arena, size_t size);
-void *z_arena_realloc(Z_Arena *arena, void *ptr, size_t new_size);
-void z_arena_free(Z_Arena *arena, void *ptr);
-void z_arena_free_all(Z_Arena *arena);
 
 #ifdef LIBZATAR_IMPLEMENTATION
 
@@ -611,8 +623,8 @@ Z_Avl_Node *z_avl_get_min(Z_Avl_Node *root) {
   return curr;
 }
 
-Z_Avl_Node *z_avl_find_node(Z_Avl_Node *root, const void *key,
-                            Z_Compare_Fn compare_keys) {
+Z_Avl_Node *z_avl_get_node(Z_Avl_Node *root, const void *key,
+                           Z_Compare_Fn compare_keys) {
 
   Z_Avl_Node *curr = root;
 
@@ -631,19 +643,12 @@ Z_Avl_Node *z_avl_find_node(Z_Avl_Node *root, const void *key,
 }
 
 bool z_avl_is_exists(Z_Avl_Node *root, void *key, Z_Compare_Fn compare_keys) {
-  return z_avl_find_node(root, key, compare_keys) != NULL;
+  return z_avl_get_node(root, key, compare_keys) != NULL;
 }
 
-bool z_avl_find(Z_Avl_Node *root, const void *key, Z_Compare_Fn compare_keys,
-                void **value) {
-  Z_Avl_Node *node = z_avl_find_node(root, key, compare_keys);
-
-  if (node != NULL) {
-    *value = node->value;
-    return 1;
-  }
-
-  return 0;
+void *z_avl_get(Z_Avl_Node *root, const void *key, Z_Compare_Fn compare_keys) {
+  Z_Avl_Node *node = z_avl_get_node(root, key, compare_keys);
+  return node ? node->value : NULL;
 }
 
 void z_avl_put(Z_Avl_Node **root, void *key, void *value,
@@ -782,8 +787,8 @@ void z_map_put(Z_Map *m, void *key, void *value, void free_key(void *),
   z_avl_put(&m->root, key, value, m->compare_keys, free_key, free_value);
 }
 
-bool z_map_find(const Z_Map *m, const void *key, void **value) {
-  return z_avl_find(m->root, key, m->compare_keys, value);
+void *z_map_get(const Z_Map *m, const void *key) {
+  return z_avl_get(m->root, key, m->compare_keys);
 }
 
 bool z_map_is_exists(const Z_Map *m, void *key) {
@@ -1266,7 +1271,29 @@ int z_str_compare_n(Z_String_View s1, Z_String_View s2, int n) {
 }
 
 void z_str_replace(Z_String *s, Z_String_View target,
-                   Z_String_View replacement);
+                   Z_String_View replacement) {
+  if (target.len == 0) {
+    return;
+  }
+
+  Z_String tmp = {0};
+
+  char *ptr = s->ptr;
+
+  while (ptr + target.len <= s->ptr + s->len) {
+    if (z_str_compare(Z_SV(ptr, target.len), target) == 0) {
+      z_str_append_str(&tmp, replacement);
+      ptr += target.len;
+    } else {
+      z_str_append_char(&tmp, *ptr);
+      ptr++;
+    }
+  }
+
+  z_str_clear(s);
+  z_str_append_str(s, Z_STR(tmp));
+  z_str_free(&tmp);
+}
 
 char *z_sv_to_cstr(Z_String_View s) { return strndup(s.ptr, s.len); }
 
@@ -1388,6 +1415,24 @@ bool z_read_whole_file(const char *pathname, Z_String *out) {
   z_da_null_terminate(out);
 
   fclose(fp);
+  return true;
+}
+
+bool z_read_whole_dir(const char *pathname, Z_File_Paths *out, Z_Arena *arena) {
+  DIR *dr = opendir(pathname);
+
+  if (dr == NULL) {
+    return false;
+  }
+
+  struct dirent *de;
+
+  while ((de = readdir(dr))) {
+    z_da_append(out, z_arena_strdup(arena, de->d_name));
+  }
+
+  closedir(dr);
+
   return true;
 }
 
@@ -1595,6 +1640,14 @@ void z_arena_free_all(Z_Arena *arena) {
   z_da_foreach(ptr, arena) { free(*ptr); }
 
   free(arena->ptr);
+}
+
+char *z_arena_strdup(Z_Arena *arena, const char *s) {
+  int len = strlen(s);
+  char *p = z_arena_malloc(arena, len + 1);
+  strcpy(p, s);
+
+  return p;
 }
 
 #endif // end implementation

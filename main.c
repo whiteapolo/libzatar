@@ -9,19 +9,26 @@
 #define LIBZATAR_IMPLEMENTATION
 #include "libzatar.h"
 
-int *d(int a) {
-  int *p = malloc(sizeof(int));
-  *p = a;
-  return p;
+static int cmpstringp(const void *p1, const void *p2) {
+  /* The actual arguments to this function are "pointers to
+     pointers to char", but strcmp(3) arguments are "pointers
+     to char", hence the following cast plus dereference */
+
+  return strcmp(*(const char **)p1, *(const char **)p2);
 }
 
 int main() {
-  Z_Map map = {.compare_keys = (Z_Compare_Fn)strcmp};
-  z_map_put(&map, d(10), d(5), free, free);
+  Z_File_Paths files = {0};
+  Z_Arena arena = {0};
+  z_read_whole_dir("../", &files, &arena);
 
-  int *value;
+  qsort(files.ptr, files.len, sizeof(char *), cmpstringp);
 
-  if (z_map_find(&map, d(10), &value)) {
-    printf("%d\n", *value);
+  z_da_foreach(file, &files) {
+    if (**file != '.')
+      printf("%s\n", *file);
   }
+
+  z_arena_free_all(&arena);
+  z_da_free(&files);
 }
