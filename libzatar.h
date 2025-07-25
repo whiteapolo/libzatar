@@ -310,8 +310,8 @@ typedef struct {
 } Z_String_View;
 
 #define Z_SV(p, l) ((Z_String_View){.ptr = (p), .len = (l)})
-#define Z_STR_TO_SV(s) ((Z_String_View){.ptr = (s).ptr, .len = (s).len})
-#define Z_CSTR_TO_SV(s) ((Z_String_View){.ptr = (s), .len = strlen(s)})
+#define Z_STR(s) ((Z_String_View){.ptr = (s).ptr, .len = (s).len})
+#define Z_CSTR(s) ((Z_String_View){.ptr = (s), .len = strlen(s)})
 #define Z_EMPTY_SV() ((Z_String_View){.ptr = "", .len = 0})
 
 const char *z_str_to_cstr(Z_String *s);
@@ -991,10 +991,10 @@ Z_String_View z_get_home_path() {
   const char *home = getenv("HOME");
 
   if (home == NULL) {
-    return Z_CSTR_TO_SV(".");
+    return Z_CSTR(".");
   }
 
-  return Z_CSTR_TO_SV(home);
+  return Z_CSTR(home);
 }
 
 void z_expand_path(Z_String_View p, Z_String *out) {
@@ -1322,18 +1322,16 @@ Z_String_View z_str_tok_next(Z_String_View s, Z_String_View previous_token,
   return z_str_tok_from(s, start_offset, delim);
 }
 
-void z_str_trim(Z_String *s) {
-  z_str_trim_cset(s, Z_CSTR_TO_SV(" \f\t\v\n\r"));
-}
+void z_str_trim(Z_String *s) { z_str_trim_cset(s, Z_CSTR(" \f\t\v\n\r")); }
 
 void z_str_trim_cset(Z_String *s, Z_String_View cset) {
-  Z_String_View trimmed = z_str_view_trim_cset(Z_STR_TO_SV(*s), cset);
+  Z_String_View trimmed = z_str_view_trim_cset(Z_STR(*s), cset);
   memmove(s->ptr, trimmed.ptr, trimmed.len);
   s->len = trimmed.len;
 }
 
 Z_String_View z_str_view_trim(Z_String_View s) {
-  return z_str_view_trim_cset(s, Z_CSTR_TO_SV(" \f\t\v\n\r"));
+  return z_str_view_trim_cset(s, Z_CSTR(" \f\t\v\n\r"));
 }
 
 Z_String_View z_str_view_trim_cset(Z_String_View s, Z_String_View cset) {
