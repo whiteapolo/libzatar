@@ -43,6 +43,8 @@
   f(__VA_ARGS__)
 #define Z_ARRAY_LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 
+typedef int (*Z_Compare_Fn)(const void *, const void *);
+
 int z_in_range(int min, int val, int max);
 int z_get_file_size(FILE *fp);
 int z_get_fmt_size(const char *fmt, ...);
@@ -187,289 +189,42 @@ int z_read_key();
 
 // ----------------------------------------------------------------------
 //
-//   avl tree header
+//   avl header
 //
 // ----------------------------------------------------------------------
 
-#define Z_AVL_DECLARE(type_name, K, V, prefix)                                 \
-                                                                               \
-  typedef struct type_name {                                                   \
-    struct type_name *left;                                                    \
-    struct type_name *right;                                                   \
-    K key;                                                                     \
-    V value;                                                                   \
-    char height;                                                               \
-  } type_name;                                                                 \
-                                                                               \
-  void prefix##_put(type_name **root, K key, V value,                          \
-                    int cmp_keys(const K, const K), void free_key(K),          \
-                    void free_value(V));                                       \
-                                                                               \
-  bool prefix##_is_exists(type_name *root, K key,                              \
-                          int cmp_keys(const K, const K));                     \
-                                                                               \
-  bool prefix##_find(type_name *root, const K key,                             \
-                     int cmp_keys(const K, const K), V *value);                \
-                                                                               \
-  void prefix##_remove(type_name **root, K key,                                \
-                       int cmp_keys(const K, const K), void free_key(K),       \
-                       void free_value(V));                                    \
-                                                                               \
-  void prefix##_order_traverse(                                                \
-      type_name *root, void action(K key, V value, void *arg), void *arg);     \
-                                                                               \
-  void prefix##_print(type_name *root, void print(K key, V value, void *arg),  \
-                      void *arg, int padding);                                 \
-                                                                               \
-  void prefix##_free(type_name *root, void free_key(K), void free_value(V));
+typedef struct Z_Avl_Node {
+  struct Z_Avl_Node *left;
+  struct Z_Avl_Node *right;
+  void *key;
+  void *value;
+  char height;
+} Z_Avl_Node;
 
-#define Z_AVL_IMPLEMENT(type_name, K, V, prefix)                               \
-                                                                               \
-  int prefix##_get_height(const type_name *node) {                             \
-    if (node == NULL) {                                                        \
-      return 0;                                                                \
-    }                                                                          \
-                                                                               \
-    return node->height;                                                       \
-  }                                                                            \
-                                                                               \
-  void prefix##_update_height(type_name *node) {                               \
-    node->height = 1 + z_max(prefix##_get_height(node->right),                 \
-                             prefix##_get_height(node->left));                 \
-  }                                                                            \
-                                                                               \
-  int prefix##_get_balance_factor(const type_name *node) {                     \
-    if (node == NULL) {                                                        \
-      return 0;                                                                \
-    }                                                                          \
-                                                                               \
-    return prefix##_get_height(node->left) - prefix##_get_height(node->right); \
-  }                                                                            \
-                                                                               \
-  void prefix##_left_rotate(type_name **root) {                                \
-    type_name *newRoot = (*root)->right;                                       \
-    type_name *tmp = newRoot->left;                                            \
-                                                                               \
-    newRoot->left = *root;                                                     \
-    (*root)->right = tmp;                                                      \
-                                                                               \
-    prefix##_update_height(newRoot->left);                                     \
-    prefix##_update_height(newRoot);                                           \
-                                                                               \
-    *root = newRoot;                                                           \
-  }                                                                            \
-                                                                               \
-  void prefix##_right_rotate(type_name **root) {                               \
-    type_name *newRoot = (*root)->left;                                        \
-    type_name *tmp = newRoot->right;                                           \
-                                                                               \
-    newRoot->right = *root;                                                    \
-    (*root)->left = tmp;                                                       \
-                                                                               \
-    prefix##_update_height(newRoot->right);                                    \
-    prefix##_update_height(newRoot);                                           \
-                                                                               \
-    *root = newRoot;                                                           \
-  }                                                                            \
-                                                                               \
-  void prefix##_left_right_rotate(type_name **root) {                          \
-    prefix##_left_rotate(&(*root)->left);                                      \
-    prefix##_right_rotate(root);                                               \
-  }                                                                            \
-                                                                               \
-  void prefix##_right_left_rotate(type_name **root) {                          \
-    prefix##_right_rotate(&(*root)->right);                                    \
-    prefix##_left_rotate(root);                                                \
-  }                                                                            \
-                                                                               \
-  type_name *prefix##_new(K key, V value) {                                    \
-    type_name *n = malloc(sizeof(type_name));                                  \
-    n->key = key;                                                              \
-    n->value = value;                                                          \
-    n->height = 1;                                                             \
-    n->left = NULL;                                                            \
-    n->right = NULL;                                                           \
-                                                                               \
-    return n;                                                                  \
-  }                                                                            \
-                                                                               \
-  type_name *prefix##_get_min(type_name *root) {                               \
-    type_name *curr = root;                                                    \
-                                                                               \
-    while (curr->left != NULL) {                                               \
-      curr = curr->left;                                                       \
-    }                                                                          \
-                                                                               \
-    return curr;                                                               \
-  }                                                                            \
-                                                                               \
-  type_name *prefix##_find_node(type_name *root, const K key,                  \
-                                int cmp_keys(const K, const K)) {              \
-    type_name *curr = root;                                                    \
-                                                                               \
-    while (curr != NULL) {                                                     \
-      int cmp_res = cmp_keys(key, curr->key);                                  \
-                                                                               \
-      if (cmp_res > 0) {                                                       \
-        curr = curr->right;                                                    \
-      } else if (cmp_res < 0) {                                                \
-        curr = curr->left;                                                     \
-      } else {                                                                 \
-        return curr;                                                           \
-      }                                                                        \
-    }                                                                          \
-                                                                               \
-    return NULL;                                                               \
-  }                                                                            \
-                                                                               \
-  bool prefix##_is_exists(type_name *root, K key,                              \
-                          int cmp_keys(const K, const K)) {                    \
-    return prefix##_find_node(root, key, cmp_keys) != NULL;                    \
-  }                                                                            \
-                                                                               \
-  bool prefix##_find(type_name *root, const K key,                             \
-                     int cmp_keys(const K, const K), V *value) {               \
-    type_name *node = prefix##_find_node(root, key, cmp_keys);                 \
-                                                                               \
-    if (node != NULL) {                                                        \
-      *value = node->value;                                                    \
-      return true;                                                             \
-    }                                                                          \
-                                                                               \
-    return false;                                                              \
-  }                                                                            \
-                                                                               \
-  void prefix##_put(type_name **root, K key, V value,                          \
-                    int cmp_keys(const K, const K), void free_key(K),          \
-                    void free_value(V)) {                                      \
-    if (*root == NULL) {                                                       \
-      *root = prefix##_new(key, value);                                        \
-      return;                                                                  \
-    }                                                                          \
-                                                                               \
-    int cmp_res = cmp_keys(key, (*root)->key);                                 \
-                                                                               \
-    if (cmp_res > 0) {                                                         \
-      prefix##_put(&(*root)->right, key, value, cmp_keys, free_key,            \
-                   free_value);                                                \
-    } else if (cmp_res < 0) {                                                  \
-      prefix##_put(&(*root)->left, key, value, cmp_keys, free_key,             \
-                   free_value);                                                \
-    } else {                                                                   \
-      CALL_F_IF_NOT_NULL(free_value, (*root)->value);                          \
-      CALL_F_IF_NOT_NULL(free_key, key);                                       \
-      (*root)->value = value;                                                  \
-    }                                                                          \
-                                                                               \
-    prefix##_update_height(*root);                                             \
-                                                                               \
-    int bf = prefix##_get_balance_factor(*root);                               \
-                                                                               \
-    if (bf > 1 && cmp_keys(key, (*root)->left->key) < 0) {                     \
-      prefix##_right_rotate(root);                                             \
-    } else if (bf < -1 && cmp_keys(key, (*root)->right->key) > 0) {            \
-      prefix##_left_rotate(root);                                              \
-    } else if (bf > 1 && cmp_keys(key, (*root)->left->key) > 0) {              \
-      prefix##_left_right_rotate(root);                                        \
-    } else if (bf < -1 && cmp_keys(key, (*root)->right->key) < 0) {            \
-      prefix##_right_left_rotate(root);                                        \
-    }                                                                          \
-  }                                                                            \
-                                                                               \
-  void prefix##_remove(type_name **root, K key,                                \
-                       int cmp_keys(const K, const K), void free_key(K),       \
-                       void free_value(V)) {                                   \
-    if (*root == NULL) {                                                       \
-      return;                                                                  \
-    }                                                                          \
-                                                                               \
-    int cmp_res = cmp_keys(key, (*root)->key);                                 \
-                                                                               \
-    if (cmp_res > 0) {                                                         \
-      prefix##_remove(&((*root)->right), key, cmp_keys, free_key, free_value); \
-      return;                                                                  \
-    }                                                                          \
-                                                                               \
-    if (cmp_res < 0) {                                                         \
-      prefix##_remove(&((*root)->left), key, cmp_keys, free_key, free_value);  \
-      return;                                                                  \
-    }                                                                          \
-                                                                               \
-    /* we reached the node */                                                  \
-                                                                               \
-    CALL_F_IF_NOT_NULL(free_key, (*root)->key);                                \
-    CALL_F_IF_NOT_NULL(free_value, (*root)->value);                            \
-                                                                               \
-    if ((*root)->left == NULL) {                                               \
-      type_name *tmp = (*root)->right;                                         \
-      free(*root);                                                             \
-      *root = tmp;                                                             \
-      return;                                                                  \
-    } else if ((*root)->right == NULL) {                                       \
-      type_name *tmp = (*root)->left;                                          \
-      free(*root);                                                             \
-      *root = tmp;                                                             \
-      return;                                                                  \
-    }                                                                          \
-                                                                               \
-    type_name *succesor = prefix##_get_min((*root)->right);                    \
-                                                                               \
-    (*root)->key = succesor->key;                                              \
-    (*root)->value = succesor->value;                                          \
-                                                                               \
-    prefix##_remove(&((*root)->right), succesor->key, cmp_keys, NULL, NULL);   \
-                                                                               \
-    prefix##_update_height(*root);                                             \
-    int bf = prefix##_get_balance_factor(*root);                               \
-                                                                               \
-    if (bf > 1 && prefix##_get_balance_factor((*root)->left) >= 0) {           \
-      prefix##_right_rotate(root);                                             \
-    } else if (bf < -1 && prefix##_get_balance_factor((*root)->right) <= 0) {  \
-      prefix##_left_rotate(root);                                              \
-    } else if (bf > 1 && prefix##_get_balance_factor((*root)->left) < 0) {     \
-      prefix##_left_right_rotate(root);                                        \
-    } else if (bf < -1 && prefix##_get_balance_factor((*root)->right) > 0) {   \
-      prefix##_right_left_rotate(root);                                        \
-    }                                                                          \
-  }                                                                            \
-                                                                               \
-  void prefix##_order_traverse(                                                \
-      type_name *root, void action(K key, V value, void *arg), void *arg) {    \
-    if (root == NULL) {                                                        \
-      return;                                                                  \
-    }                                                                          \
-                                                                               \
-    prefix##_order_traverse(root->left, action, arg);                          \
-                                                                               \
-    action(root->key, root->value, arg);                                       \
-    prefix##_order_traverse(root->right, action, arg);                         \
-  }                                                                            \
-                                                                               \
-  void prefix##_print(type_name *root, void print(K key, V value, void *arg),  \
-                      void *arg, int padding) {                                \
-    if (root == NULL) {                                                        \
-      return;                                                                  \
-    }                                                                          \
-                                                                               \
-    printf("%*c", padding, ' ');                                               \
-    print(root->key, root->value, arg);                                        \
-    prefix##_print(root->right, print, arg, padding + 4);                      \
-    prefix##_print(root->left, print, arg, padding + 4);                       \
-  }                                                                            \
-                                                                               \
-  void prefix##_free(type_name *root, void free_key(K), void free_value(V)) {  \
-    if (root == NULL) {                                                        \
-      return;                                                                  \
-    }                                                                          \
-                                                                               \
-    CALL_F_IF_NOT_NULL(free_key, root->key);                                   \
-    CALL_F_IF_NOT_NULL(free_value, root->value);                               \
-                                                                               \
-    prefix##_free(root->left, free_key, free_value);                           \
-    prefix##_free(root->right, free_key, free_value);                          \
-                                                                               \
-    free(root);                                                                \
-  }
+void z_avl_put(Z_Avl_Node **root, void *key, void *value,
+               int cmp_keys(const void *, const void *), void free_key(void *),
+               void free_value(void *));
+
+bool z_avl_is_exists(Z_Avl_Node *root, void *key,
+                     int cmp_keys(const void *, const void *));
+
+bool z_avl_find(Z_Avl_Node *root, const void *key,
+                int cmp_keys(const void *, const void *), void **value);
+
+void z_avl_remove(Z_Avl_Node **root, void *key,
+                  int cmp_keys(const void *, const void *),
+                  void free_key(void *), void free_value(void *));
+
+void z_avl_order_traverse(Z_Avl_Node *root,
+                          void action(void *key, void *value, void *arg),
+                          void *arg);
+
+void z_avl_print(Z_Avl_Node *root,
+                 void print(void *key, void *value, void *arg), void *arg,
+                 int padding);
+
+void z_avl_free(Z_Avl_Node *root, void free_key(void *),
+                void free_value(void *));
 
 // ----------------------------------------------------------------------
 //
@@ -477,31 +232,28 @@ int z_read_key();
 //
 // ----------------------------------------------------------------------
 
-#define Z_MAP_DECLARE(type_name, K, V, prefix)                                 \
-                                                                               \
-  Z_AVL_DECLARE(_avl_##type_name, K, V, _avl_##prefix)                         \
-                                                                               \
-  typedef struct {                                                             \
-    _avl_##type_name *root;                                                    \
-    int (*cmp_keys)(const K, const K);                                         \
-  } type_name;                                                                 \
-                                                                               \
-  void prefix##_init(type_name *m, int cmp_keys(const K, const K));            \
-                                                                               \
-  void prefix##_put(type_name *m, K key, V value, void free_key(K),            \
-                    void free_value(V));                                       \
-                                                                               \
-  bool prefix##_find(const type_name *m, const K key, V *value);               \
-                                                                               \
-  bool prefix##_is_exists(const type_name *m, K key);                          \
-                                                                               \
-  void prefix##_remove(type_name *m, K key, void free_key(K),                  \
-                       void free_value(V));                                    \
-                                                                               \
-  void prefix##_order_traverse(                                                \
-      const type_name *m, void action(K key, V value, void *arg), void *arg);  \
-                                                                               \
-  void prefix##_free(type_name *m, void free_key(K), void free_value(V));
+typedef struct {
+  int (*cmp_keys)(const void *, const void *);
+  Z_Avl_Node *root;
+} Z_Map;
+
+void z_map_init(Z_Map *m, int cmp_keys(const void *, const void *));
+
+void z_map_put(Z_Map *m, void *key, void *value, void free_key(void *),
+               void free_value(void *));
+
+bool z_map_find(const Z_Map *m, const void *key, void **value);
+
+bool z_map_is_exists(const Z_Map *m, void *key);
+
+void z_map_remove(Z_Map *m, void *key, void free_key(void *),
+                  void free_value(void *));
+
+void z_map_order_traverse(const Z_Map *m,
+                          void action(void *key, void *value, void *arg),
+                          void *arg);
+
+void z_map_free(Z_Map *m, void free_key(void *), void free_value(void *));
 
 #define Z_MAP_IMPLEMENT(type_name, K, V, prefix)                               \
                                                                                \
@@ -821,6 +573,285 @@ void z_die_format(const char *fmt, ...) {
   va_start(ap, fmt);
   vfprintf(stderr, fmt, ap);
   exit(EXIT_FAILURE);
+}
+
+// ----------------------------------------------------------------------
+//
+//   avl implementation
+//
+// ----------------------------------------------------------------------
+
+int z_avl_get_height(const Z_Avl_Node *node) {
+
+  if (node == NULL) {
+    return 0;
+  }
+
+  return node->height;
+}
+
+void z_avl_update_height(Z_Avl_Node *node) {
+  node->height =
+      1 + z_max(z_avl_get_height(node->right), z_avl_get_height(node->left));
+}
+
+int z_avl_get_balance_factor(const Z_Avl_Node *node) {
+  if (node == NULL) {
+    return 0;
+  }
+
+  return z_avl_get_height(node->left) - z_avl_get_height(node->right);
+}
+
+void z_avl_left_rotate(Z_Avl_Node **root) {
+  Z_Avl_Node *newRoot = (*root)->right;
+  Z_Avl_Node *tmp = newRoot->left;
+  newRoot->left = *root;
+  (*root)->right = tmp;
+  z_avl_update_height(newRoot->left);
+  z_avl_update_height(newRoot);
+  *root = newRoot;
+}
+
+void z_avl_right_rotate(Z_Avl_Node **root) {
+  Z_Avl_Node *newRoot = (*root)->left;
+  Z_Avl_Node *tmp = newRoot->right;
+  newRoot->right = *root;
+  (*root)->left = tmp;
+  z_avl_update_height(newRoot->right);
+  z_avl_update_height(newRoot);
+  *root = newRoot;
+}
+
+void z_avl_left_right_rotate(Z_Avl_Node **root) {
+  z_avl_left_rotate(&(*root)->left);
+  z_avl_right_rotate(root);
+}
+
+void z_avl_right_left_rotate(Z_Avl_Node **root) {
+  z_avl_right_rotate(&(*root)->right);
+  z_avl_left_rotate(root);
+}
+
+Z_Avl_Node *z_avl_new(void *key, void *value) {
+  Z_Avl_Node *n = malloc(sizeof(Z_Avl_Node));
+  n->key = key;
+  n->value = value;
+  n->height = 1;
+  n->left = NULL;
+  n->right = NULL;
+  return n;
+}
+
+Z_Avl_Node *z_avl_get_min(Z_Avl_Node *root) {
+  Z_Avl_Node *curr = root;
+
+  while (curr->left != NULL) {
+    curr = curr->left;
+  }
+
+  return curr;
+}
+
+Z_Avl_Node *z_avl_find_node(Z_Avl_Node *root, const void *key,
+                            int cmp_keys(const void *, const void *)) {
+
+  Z_Avl_Node *curr = root;
+
+  while (curr != NULL) {
+    int cmp_res = cmp_keys(key, curr->key);
+    if (cmp_res > 0) {
+      curr = curr->right;
+    } else if (cmp_res < 0) {
+      curr = curr->left;
+    } else {
+      return curr;
+    }
+  }
+
+  return NULL;
+}
+
+bool z_avl_is_exists(Z_Avl_Node *root, void *key,
+                     int cmp_keys(const void *, const void *)) {
+  return z_avl_find_node(root, key, cmp_keys) != NULL;
+}
+
+bool z_avl_find(Z_Avl_Node *root, const void *key,
+                int cmp_keys(const void *, const void *), void **value) {
+  Z_Avl_Node *node = z_avl_find_node(root, key, cmp_keys);
+
+  if (node != NULL) {
+    *value = node->value;
+    return 1;
+  }
+
+  return 0;
+}
+
+void z_avl_put(Z_Avl_Node **root, void *key, void *value,
+               int cmp_keys(const void *, const void *), void free_key(void *),
+               void free_value(void *)) {
+  if (*root == NULL) {
+    *root = z_avl_new(key, value);
+    return;
+  }
+  int cmp_res = cmp_keys(key, (*root)->key);
+  if (cmp_res > 0) {
+    z_avl_put(&(*root)->right, key, value, cmp_keys, free_key, free_value);
+  } else if (cmp_res < 0) {
+    z_avl_put(&(*root)->left, key, value, cmp_keys, free_key, free_value);
+  } else {
+    if (free_value)
+      free_value((*root)->value);
+    if (free_key)
+      free_key(key);
+    (*root)->value = value;
+  }
+  z_avl_update_height(*root);
+  int bf = z_avl_get_balance_factor(*root);
+  if (bf > 1 && cmp_keys(key, (*root)->left->key) < 0) {
+    z_avl_right_rotate(root);
+  } else if (bf < -1 && cmp_keys(key, (*root)->right->key) > 0) {
+    z_avl_left_rotate(root);
+  } else if (bf > 1 && cmp_keys(key, (*root)->left->key) > 0) {
+    z_avl_left_right_rotate(root);
+  } else if (bf < -1 && cmp_keys(key, (*root)->right->key) < 0) {
+    z_avl_right_left_rotate(root);
+  }
+}
+void z_avl_remove(Z_Avl_Node **root, void *key,
+                  int cmp_keys(const void *, const void *),
+                  void free_key(void *), void free_value(void *)) {
+  if (*root == NULL) {
+    return;
+  }
+
+  int cmp_res = cmp_keys(key, (*root)->key);
+
+  if (cmp_res > 0) {
+    z_avl_remove(&((*root)->right), key, cmp_keys, free_key, free_value);
+    return;
+  }
+
+  if (cmp_res < 0) {
+    z_avl_remove(&((*root)->left), key, cmp_keys, free_key, free_value);
+    return;
+  }
+
+  if (free_key)
+    free_key((*root)->key);
+
+  if (free_value)
+    free_value((*root)->value);
+
+  if ((*root)->left == NULL) {
+    Z_Avl_Node *tmp = (*root)->right;
+    free(*root);
+    *root = tmp;
+    return;
+  } else if ((*root)->right == NULL) {
+    Z_Avl_Node *tmp = (*root)->left;
+    free(*root);
+    *root = tmp;
+    return;
+  }
+
+  Z_Avl_Node *succesor = z_avl_get_min((*root)->right);
+  (*root)->key = succesor->key;
+  (*root)->value = succesor->value;
+  z_avl_remove(&((*root)->right), succesor->key, cmp_keys, NULL, NULL);
+  z_avl_update_height(*root);
+
+  int bf = z_avl_get_balance_factor(*root);
+
+  if (bf > 1 && z_avl_get_balance_factor((*root)->left) >= 0) {
+    z_avl_right_rotate(root);
+  } else if (bf < -1 && z_avl_get_balance_factor((*root)->right) <= 0) {
+    z_avl_left_rotate(root);
+  } else if (bf > 1 && z_avl_get_balance_factor((*root)->left) < 0) {
+    z_avl_left_right_rotate(root);
+  } else if (bf < -1 && z_avl_get_balance_factor((*root)->right) > 0) {
+    z_avl_right_left_rotate(root);
+  }
+}
+void z_avl_order_traverse(Z_Avl_Node *root,
+                          void action(void *key, void *value, void *arg),
+                          void *arg) {
+  if (root == NULL) {
+    return;
+  }
+
+  z_avl_order_traverse(root->left, action, arg);
+  action(root->key, root->value, arg);
+  z_avl_order_traverse(root->right, action, arg);
+}
+
+void z_avl_print(Z_Avl_Node *root,
+                 void print(void *key, void *value, void *arg), void *arg,
+                 int padding) {
+  if (root == NULL) {
+    return;
+  }
+
+  printf("%*c", padding, ' ');
+  print(root->key, root->value, arg);
+  z_avl_print(root->right, print, arg, padding + 4);
+  z_avl_print(root->left, print, arg, padding + 4);
+}
+void z_avl_free(Z_Avl_Node *root, void free_key(void *),
+                void free_value(void *)) {
+  if (root == NULL) {
+    return;
+  }
+
+  if (free_key)
+    free_key(root->key);
+
+  if (free_value)
+    free_value(root->value);
+
+  z_avl_free(root->left, free_key, free_value);
+  z_avl_free(root->right, free_key, free_value);
+  free(root);
+}
+// ----------------------------------------------------------------------
+//
+//   map implementation
+//
+// ----------------------------------------------------------------------
+
+void z_map_init(Z_Map *m, int cmp_keys(const void *, const void *)) {
+  m->cmp_keys = cmp_keys;
+  m->root = NULL;
+}
+
+void z_map_put(Z_Map *m, void *key, void *value, void free_key(void *),
+               void free_value(void *)) {
+  z_avl_put(&m->root, key, value, m->cmp_keys, free_key, free_value);
+}
+
+bool z_map_find(const Z_Map *m, const void *key, void **value) {
+  return z_avl_find(m->root, key, m->cmp_keys, value);
+}
+
+bool z_map_is_exists(const Z_Map *m, void *key) {
+  return z_avl_is_exists(m->root, key, m->cmp_keys);
+}
+
+void z_map_remove(Z_Map *m, void *key, void free_key(void *),
+                  void free_value(void *)) {
+  z_avl_remove(&m->root, key, m->cmp_keys, free_key, free_value);
+}
+
+void z_map_order_traverse(const Z_Map *m,
+                          void action(void *key, void *value, void *arg),
+                          void *arg) {
+  z_avl_order_traverse(m->root, action, arg);
+}
+
+void z_map_free(Z_Map *m, void free_key(void *), void free_value(void *)) {
+  z_avl_free(m->root, free_key, free_value);
 }
 
 // ----------------------------------------------------------------------
