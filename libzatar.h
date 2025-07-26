@@ -41,13 +41,13 @@
 #define CALL_F_IF_NOT_NULL(f, ...)                                             \
   if (f)                                                                       \
   f(__VA_ARGS__)
+
 #define Z_ARRAY_LEN(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #define Z_HEAP_ALLOC(value, type) z_memdup(&(type){value}, sizeof(type))
 
 typedef int (*Z_Compare_Fn)(const void *, const void *);
 
-int z_in_range(int min, int val, int max);
 int z_get_file_size(FILE *fp);
 int z_get_fmt_size(const char *fmt, ...);
 int z_get_fmt_size_va(const char *fmt, va_list ap);
@@ -122,7 +122,6 @@ void *z_arena_malloc(Z_Arena *arena, size_t size);
 void *z_arena_realloc(Z_Arena *arena, void *ptr, size_t new_size);
 void z_arena_free(Z_Arena *arena, void *ptr);
 void z_arena_free_all(Z_Arena *arena);
-
 char *z_arena_strdup(Z_Arena *arena, const char *s);
 
 // ----------------------------------------------------------------------
@@ -195,17 +194,12 @@ typedef enum {
 
 bool z_enable_raw_mode(int vminKeys, int vtime);
 bool z_disable_raw_mode();
-
 bool z_get_cursor_pos(int *x, int *y);
-
 bool z_get_screen_size_by_cursor(int *width, int *height);
 bool z_get_screen_size_by_ioctl(int *width, int *height);
 bool z_get_screen_size(int *width, int *height);
-
 bool z_register_change_in_window_size(void function(int));
-
 bool z_enable_full_buffering(FILE *fp);
-
 int z_wait_for_byte();
 int z_read_escape_key();
 int z_read_key();
@@ -342,12 +336,13 @@ typedef struct {
 #define Z_CSTR(s) ((Z_String_View){.ptr = (s), .len = strlen(s)})
 #define Z_EMPTY_SV() ((Z_String_View){.ptr = "", .len = 0})
 
-const char *z_str_to_cstr(Z_String *s);
+char *z_str_to_cstr(Z_String *s);
 Z_String z_str_new_format(const char *fmt, ...);
 Z_String z_str_new_format_va(const char *fmt, va_list ap);
 Z_String z_str_new_from(Z_String_View s);
 void z_str_append_format(Z_String *s, const char *fmt, ...);
 void z_str_append_format_va(Z_String *s, const char *fmt, va_list ap);
+void z_str_reset_format(Z_String *s, const char *fmt, ...);
 void z_str_append_str(Z_String *dst, Z_String_View src);
 void z_str_append_char(Z_String *s, char c);
 char z_str_pop_char(Z_String *s);
@@ -381,8 +376,10 @@ void z_str_free(Z_String *s);
 void z_str_clear(Z_String *s);
 
 bool z_read_whole_file(const char *pathname, Z_String *out);
-bool z_read_whole_dir(const char *pathname, Z_File_Paths *out, Z_Arena *arena);
+bool z_read_whole_dir(const char *pathname, Z_File_Paths *out);
 void z_str_get_line(FILE *fp, Z_String *out);
+
+void z_free_file_paths(Z_File_Paths *paths);
 
 // ----------------------------------------------------------------------
 //
@@ -1200,7 +1197,7 @@ bool z_mkdir(const char *pathname) {
 //
 // ----------------------------------------------------------------------
 
-const char *z_str_to_cstr(Z_String *s) {
+char *z_str_to_cstr(Z_String *s) {
   z_da_null_terminate(s);
   return s->ptr;
 }
@@ -1226,6 +1223,14 @@ Z_String z_str_new_from(Z_String_View s) {
 }
 
 void z_str_append_format(Z_String *s, const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  z_str_append_format_va(s, fmt, ap);
+  va_end(ap);
+}
+
+void z_str_reset_format(Z_String *s, const char *fmt, ...) {
+  z_str_clear(s);
   va_list ap;
   va_start(ap, fmt);
   z_str_append_format_va(s, fmt, ap);
@@ -1418,7 +1423,7 @@ bool z_read_whole_file(const char *pathname, Z_String *out) {
   return true;
 }
 
-bool z_read_whole_dir(const char *pathname, Z_File_Paths *out, Z_Arena *arena) {
+bool z_read_whole_dir(const char *pathname, Z_File_Paths *out) {
   DIR *dr = opendir(pathname);
 
   if (dr == NULL) {
@@ -1428,12 +1433,17 @@ bool z_read_whole_dir(const char *pathname, Z_File_Paths *out, Z_Arena *arena) {
   struct dirent *de;
 
   while ((de = readdir(dr))) {
-    z_da_append(out, z_arena_strdup(arena, de->d_name));
+    z_da_append(out, strdup(de->d_name));
   }
 
   closedir(dr);
 
   return true;
+}
+
+void z_free_file_paths(Z_File_Paths *paths) {
+  z_da_foreach(file, paths) { free(*file); }
+  z_da_free(paths);
 }
 
 void z_str_get_line(FILE *fp, Z_String *out) {
