@@ -1253,11 +1253,7 @@ void z_str_append_str(Z_String *dst, Z_String_View src) {
   z_str_append_format(dst, "%.*s", src.len, src.ptr);
 }
 
-void z_str_append_char(Z_String *s, char c) {
-  z_da_ensure_capacity(s, s->len + 1);
-  s->ptr[s->len++] = c;
-  z_da_null_terminate(s);
-}
+void z_str_append_char(Z_String *s, char c) { z_str_append_format(s, "%c", c); }
 
 char z_str_pop_char(Z_String *s) { return s->ptr[--s->len]; }
 
