@@ -437,9 +437,9 @@ void z_rebuild_yourself(const char *src_pathname, char **argv);
 #define z_cmd_append(cmd, ...) _z_cmd_append(cmd, __VA_ARGS__, NULL)
 void _z_cmd_append(Z_Cmd *cmd, ...);
 void z_cmd_append_va(Z_Cmd *cmd, va_list ap);
+int z_cmd_run_sync(Z_Cmd *cmd);
 int z_cmd_run_async(Z_Cmd *cmd);
-int _z_run_async(const char *arg, ...);
-#define z_run_async(arg, ...) _z_run_async(arg, ##__VA_ARGS__, NULL)
+int _z_run_sync(const char *arg, ...);
 void z_cmd_free(Z_Cmd *cmd);
 void z_cmd_clear(Z_Cmd *cmd);
 
@@ -1499,14 +1499,19 @@ void z_rebuild_yourself(const char *src_pathname, char **argv) {
     return;
   }
 
+  Z_String old_path = z_str_new_format("%s.old", argv[0]);
+  rename(argv[0], z_str_to_cstr(&old_path));
+
   Z_Cmd cmd = {0};
   z_cmd_append(&cmd, "cc", src_pathname, "-o", argv[0]);
-  int status = z_cmd_run_async(&cmd);
-  z_cmd_free(&cmd);
+  int status = z_cmd_run_sync(&cmd);
 
   if (status != 0) {
+    rename(z_str_to_cstr(&old_path), argv[0]);
     exit(status);
   }
+
+  remove(z_str_to_cstr(&old_path));
 
   status = execvp(argv[0], argv);
   exit(1);
@@ -1553,7 +1558,7 @@ void z_cmd_print(const Z_Cmd *cmd) {
   printf("\n");
 }
 
-int z_cmd_run_async(Z_Cmd *cmd) {
+int z_cmd_run_sync(Z_Cmd *cmd) {
   z_da_null_terminate(cmd);
   z_cmd_print(cmd);
 
@@ -1576,6 +1581,18 @@ int z_cmd_run_async(Z_Cmd *cmd) {
   }
 
   return status;
+}
+
+int z_cmd_run_async(Z_Cmd *cmd) {
+  int pid = fork();
+
+  if (pid == -1) {
+    return -1;
+  } else if (pid == 0) {
+    exit(z_cmd_run_sync(cmd));
+  } else {
+    return pid;
+  }
 }
 
 void z_cmd_free(Z_Cmd *cmd) {

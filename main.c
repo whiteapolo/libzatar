@@ -9,6 +9,4 @@
 #define LIBZATAR_IMPLEMENTATION
 #include "libzatar.h"
 
-int main() {
-  Z_String tmp = z_str_new_format("%s", "/usr/lib/qt5/bin/linguist ");
-}
+int main() {}

@@ -1,19 +1,19 @@
+#include <sys/wait.h>
 #define LIBZATAR_IMPLEMENTATION
 #include "libzatar.h"
 
-int main(int argc, char **argv)
-{
-    z_rebuild_yourself(__FILE__, argv);
+int main(int argc, char **argv) {
+  z_rebuild_yourself(__FILE__, argv);
 
-    Z_Cmd cmd = {0};
-    z_cmd_append(&cmd, "cc");
-    z_cmd_append(&cmd, "main.c");
-    z_cmd_append(&cmd, "-o", "exe");
-    z_cmd_append(&cmd, "-Wextra", "-Wall");
-    z_cmd_append(&cmd, "-g");
-    z_cmd_append(&cmd, "-O3");
+  Z_Cmd cmd = {0};
+  z_cmd_append(&cmd, "cc");
+  z_cmd_append(&cmd, "main.c");
+  z_cmd_append(&cmd, "-o", "exe");
+  z_cmd_append(&cmd, "-Wextra", "-Wall");
+  z_cmd_append(&cmd, "-g");
+  z_cmd_append(&cmd, "-O3");
 
-    z_cmd_run_async(&cmd);
+  z_cmd_run_sync(&cmd);
 
-    return 0;
+  return 0;
 }
