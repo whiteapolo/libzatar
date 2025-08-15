@@ -37,7 +37,7 @@
 // ----------------------------------------------------------------------
 
 #define Z_DEFAULT_GROWTH_RATE 2
-#define Z_ARRAY_LEN(arr) (sizeof(arr) / sizeof(arr[0]))
+#define Z_ARRAY_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
 #define Z_HEAP_ALLOC(value, type) z_memdup(&(type){value}, sizeof(type))
 
 typedef int (*Z_Compare_Fn)(const void *, const void *);
@@ -88,8 +88,8 @@ int z_print_warning(const char *fmt, ...);
     memset(&(da)->ptr[(da)->len], 0, sizeof(*(da)->ptr));                      \
   } while (0)
 
-#define z_da_foreach(it, da)                                                   \
-  for (typeof((da)->ptr) it = (da)->ptr; it < (da)->ptr + (da)->len; it++)
+#define z_da_foreach(Type, it, da)                                             \
+  for (Type it = (da)->ptr; it < (da)->ptr + (da)->len; it++)
 
 #define z_da_remove(da, i)                                                     \
   do {                                                                         \
@@ -393,6 +393,7 @@ typedef struct {
   char **ptr;
   int len;
   int cap;
+  Z_Arena arena;
 } Z_File_Paths;
 
 Z_String_View z_get_path_extension(Z_String_View path);
@@ -422,7 +423,6 @@ bool z_mkdir(const char *pathname);
 
 bool z_read_whole_file(const char *pathname, Z_String *out);
 bool z_read_whole_dir(const char *pathname, Z_File_Paths *out);
-void z_str_get_line(FILE *fp, Z_String *out);
 
 void z_free_file_paths(Z_File_Paths *paths);
 
@@ -438,10 +438,11 @@ typedef struct {
   int cap;
 } Z_Cmd;
 
-bool z_should_rebuild_impl(const char *target, ...);
-bool z_should_rebuild_va(const char *target, va_list ap);
+bool z_should_rebuild_impl(const char *target, const char *deps[],
+                           int deps_len);
 #define z_should_rebuild(target, ...)                                          \
-  z_should_rebuild_impl(target, ##__VA_ARGS__, NULL)
+  z_should_rebuild_impl(target, (const char *[]){__VA_ARGS__},                 \
+                        Z_ARRAY_LEN(((const char *[]){__VA_ARGS__})))
 void z_rebuild_yourself(const char *src_pathname, char **argv);
 #define z_cmd_append(cmd, ...) z_cmd_append_impl(cmd, __VA_ARGS__, NULL)
 void z_cmd_append_impl(Z_Cmd *cmd, ...);
@@ -1224,7 +1225,7 @@ bool z_read_whole_dir(const char *pathname, Z_File_Paths *out) {
   struct dirent *de;
 
   while ((de = readdir(dr))) {
-    z_da_append(out, strdup(de->d_name));
+    z_da_append(out, z_arena_strdup(&out->arena, de->d_name));
   }
 
   closedir(dr);
@@ -1233,7 +1234,7 @@ bool z_read_whole_dir(const char *pathname, Z_File_Paths *out) {
 }
 
 void z_free_file_paths(Z_File_Paths *paths) {
-  z_da_foreach(file, paths) { free(*file); }
+  z_arena_free_all(&paths->arena);
   z_da_free(paths);
 }
 
@@ -1436,7 +1437,8 @@ bool z_sv_split_next(Z_String_View s, Z_String_View delim,
   return true;
 }
 
-// Z_String_View z_sv_split_part(Z_String_View s, Z_String_View delim, int n) {
+// Z_String_View z_sv_split_part(Z_String_View s, Z_String_View delim, int n)
+// {
 //   // z_str_tok_foreach(s, delim, tok) {
 //   //   if (n == 0) {
 //   //     return tok;
@@ -1510,32 +1512,14 @@ void z_str_clear(Z_String *s) {
   z_da_null_terminate(s);
 }
 
-void z_str_get_line(FILE *fp, Z_String *out) {
-  char buf[BUFSIZ];
-
-  while (fgets(buf, BUFSIZ, fp)) {
-    z_str_append_format(out, "%s", buf);
-  }
-}
-
 // ----------------------------------------------------------------------
 //
 //   cmd implementation
 //
 // ----------------------------------------------------------------------
 
-bool z_should_rebuild_impl(const char *target, ...) {
-  va_list ap;
-  va_start(ap, target);
-  bool should_rebuild = z_should_rebuild_va(target, ap);
-  va_end(ap);
-
-  return should_rebuild;
-}
-
-bool z_should_rebuild_va(const char *target, va_list ap) {
-  va_list ap1;
-  va_copy(ap1, ap);
+bool z_should_rebuild_impl(const char *target, const char *deps[],
+                           int deps_len) {
 
   struct stat target_stat;
   struct stat dependency_stat;
@@ -1544,19 +1528,13 @@ bool z_should_rebuild_va(const char *target, va_list ap) {
     return true;
   }
 
-  const char *dependency = va_arg(ap, const char *);
-
-  while (dependency) {
-    if (stat(dependency, &dependency_stat)) {
-      z_print_error("cannot access '%s': No such file", dependency);
-      va_end(ap1);
+  for (int i = 0; i < deps_len; i++) {
+    if (stat(deps[i], &dependency_stat)) {
+      z_print_error("cannot access '%s': %s", deps[i], strerror(errno));
       return false;
     } else if (target_stat.st_mtim.tv_sec < dependency_stat.st_mtim.tv_sec) {
-      va_end(ap1);
       return true;
     }
-
-    dependency = va_arg(ap, const char *);
   }
 
   return false;
@@ -1727,7 +1705,7 @@ void *z_arena_realloc(Z_Arena *arena, void *ptr, size_t new_size) {
     return NULL;
   }
 
-  z_da_foreach(mem, arena) {
+  z_da_foreach(void **, mem, arena) {
     if (*mem == ptr) {
       *mem = realloc(*mem, new_size);
       return *mem;
@@ -1743,7 +1721,7 @@ void z_arena_free(Z_Arena *arena, void *ptr) {
     return;
   }
 
-  z_da_foreach(mem, arena) {
+  z_da_foreach(void **, mem, arena) {
     if (*mem == ptr) {
       free(*mem);
       z_da_remove(arena, mem - arena->ptr);
@@ -1755,7 +1733,7 @@ void z_arena_free(Z_Arena *arena, void *ptr) {
 }
 
 void z_arena_free_all(Z_Arena *arena) {
-  z_da_foreach(ptr, arena) { free(*ptr); }
+  z_da_foreach(void **, ptr, arena) { free(*ptr); }
 
   free(arena->ptr);
 }

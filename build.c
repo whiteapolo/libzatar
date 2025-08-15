@@ -6,10 +6,11 @@ int main(int argc, char **argv) {
   z_rebuild_yourself(__FILE__, argv);
 
   Z_Cmd cmd = {0};
-  z_cmd_append(&cmd, "cc");
+  z_cmd_append(&cmd, "gcc");
   z_cmd_append(&cmd, "main.c");
   z_cmd_append(&cmd, "-o", "exe");
-  z_cmd_append(&cmd, "-Wextra", "-Wall");
+  z_cmd_append(&cmd, "-Wextra", "-Wall", "-pedantic");
+  z_cmd_append(&cmd, "-std=c17");
   z_cmd_append(&cmd, "-g");
   z_cmd_append(&cmd, "-O3");
 
