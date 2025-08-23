@@ -38,7 +38,15 @@
 
 #define Z_DEFAULT_GROWTH_RATE 2
 #define Z_ARRAY_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
-#define Z_HEAP_ALLOC(value, type) z_memdup(&(type){value}, sizeof(type))
+#define Z_HEAP_ALLOC(Type, value) z_memdup(&(Type){value}, sizeof(Type))
+#define ONCE(statements)                                                       \
+  do {                                                                         \
+    static bool _first_time = true;                                            \
+    if (!_first_time)                                                          \
+      break;                                                                   \
+    _first_time = false;                                                       \
+    statements                                                                 \
+  } while (0)
 
 typedef int (*Z_Compare_Fn)(const void *, const void *);
 
@@ -380,6 +388,32 @@ void z_str_clear(Z_String *s);
 
 // ----------------------------------------------------------------------
 //
+//   scanner header
+//
+// ----------------------------------------------------------------------
+
+typedef struct {
+  Z_String_View source;
+  int start;
+  int end;
+  int line;
+  int column;
+} Z_Scanner;
+
+Z_Scanner z_scanner_new(Z_String_View s);
+bool z_scanner_is_at_end(Z_Scanner scanner);
+char z_scanner_advance(Z_Scanner *scanner);
+char z_scanner_peek(Z_Scanner scanner);
+bool z_scanner_check(Z_Scanner scanner, char c);
+bool z_scanner_match(Z_Scanner *scanner, char expected);
+bool z_scanner_check_string(Z_Scanner scanner, Z_String_View s);
+bool z_scanner_match_string(Z_Scanner *scanner, Z_String_View s);
+Z_String_View z_scanner_capture(Z_Scanner scanner);
+void z_scanner_reset_mark(Z_Scanner *scanner);
+
+
+// ----------------------------------------------------------------------
+//
 //   path header
 //
 // ----------------------------------------------------------------------
@@ -452,6 +486,7 @@ int z_cmd_run_async(Z_Cmd *cmd);
 void z_cmd_free(Z_Cmd *cmd);
 void z_cmd_clear(Z_Cmd *cmd);
 
+#endif // end header
 #ifdef LIBZATAR_IMPLEMENTATION
 
 // ----------------------------------------------------------------------
@@ -958,6 +993,96 @@ int z_read_key() {
   }
 
   return c;
+}
+
+// ----------------------------------------------------------------------
+//
+//   scanner implementation
+//
+// ----------------------------------------------------------------------
+
+
+Z_Scanner z_scanner_new(Z_String_View source)
+{
+  Z_Scanner scanner = {
+    .source = source,
+    .start = 0,
+    .end = 0,
+    .line = 1,
+    .column = 1,
+  };
+
+  return scanner;
+}
+
+bool z_scanner_is_at_end(Z_Scanner scanner)
+{
+  return scanner.end >= scanner.source.len;
+}
+
+char z_scanner_advance(Z_Scanner *scanner)
+{
+  char c = scanner->source.ptr[scanner->end++];
+
+  if (c == '\n') {
+    scanner->line++;
+    scanner->column = 1;
+  }
+
+  return c;
+}
+
+char z_scanner_peek(Z_Scanner scanner)
+{
+  return scanner.source.ptr[scanner.end];
+}
+
+bool z_scanner_check(Z_Scanner scanner, char c)
+{
+  return z_scanner_peek(scanner) == c;
+}
+
+bool z_scanner_match(Z_Scanner *scanner, char expected)
+{
+  if (z_scanner_is_at_end(*scanner)) {
+    return false;
+  }
+
+  if (z_scanner_check(*scanner, expected)) {
+    z_scanner_advance(scanner);
+    return true;
+  }
+
+  return false;
+}
+
+bool z_scanner_check_string(Z_Scanner scanner, Z_String_View s)
+{
+  if (scanner.end + s.len > scanner.source.len) {
+    return false;
+  }
+
+  return memcmp(&scanner.source.ptr[scanner.end], s.ptr, s.len) == 0;
+}
+
+bool z_scanner_match_string(Z_Scanner *scanner, Z_String_View s)
+{
+  if (z_scanner_check_string(*scanner, s)) {
+    scanner->end += s.len;
+    return true;
+  }
+
+  return false;
+}
+
+Z_String_View z_scanner_capture(Z_Scanner scanner)
+{
+  return z_str_substring(scanner.source, scanner.start, scanner.end);
+}
+
+void z_scanner_reset_mark(Z_Scanner *scanner)
+{
+  scanner->start = scanner->end;
 }
 
 // ----------------------------------------------------------------------
@@ -1747,4 +1872,3 @@ char *z_arena_strdup(Z_Arena *arena, const char *s) {
 }
 
 #endif // end implementation
-#endif // end header
