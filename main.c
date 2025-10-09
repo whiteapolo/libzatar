@@ -9,6 +9,22 @@
 #define LIBZATAR_IMPLEMENTATION
 #include "libzatar.h"
 
+typedef struct {
+  const char *lexeme;
+  int line;
+} Token;
+
+typedef struct {
+  bool ok;
+  Token value;
+} Optional_Token;
+
+typedef struct {
+  bool ok;
+  Token value;
+} Optional_Token;
+
+
 void fn() {
   ONCE(printf("Hello world!\n"););
   ONCE(printf("Hello world!\n"););
